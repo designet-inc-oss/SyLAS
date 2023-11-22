@@ -1,0 +1,73 @@
+{
+  "template": "syslog-*",
+  "settings": {
+    "analysis": {
+      "analyzer":{
+        "log_analyzer":{
+           "type":"custom",
+           "tokenizer":"whitespace",
+           "filter":[
+              "lowercase"
+           ]
+        }
+      },
+      "normalizer": {
+        "nlower": {
+          "type": "custom",
+          "filter": ["lowercase"]
+        }
+      }
+    }
+  }, 
+  "mappings" : {
+    "events" : {
+      "properties" : {
+        "date" : {
+          "type" : "date"
+        },
+        "facility" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "host" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "message" : {
+          "type" : "text",
+          "analyzer": "log_analyzer",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "normalizer": "nlower"
+            }
+          }
+        },
+        "priority" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        },
+        "tag" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}

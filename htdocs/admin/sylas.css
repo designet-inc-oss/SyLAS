@@ -1,0 +1,92 @@
+/*
+ * SyLAS
+ *
+ * Copyright (C) 2017 DesigNET, INC.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+
+.year {
+    width: 55px;
+}
+.month {
+    width: 40px;
+}
+.date {
+    width: 40px;
+}
+.hour {
+    width: 40px;
+}
+.minute {
+    width: 40px;
+}
+.second {
+    width: 40px;
+}
+.prim {
+    width: 70px;
+}
+.rule {
+    width: 100px;
+}
+.logtype {
+    width: 60px;
+}
+.logname {
+    width: 135px;
+}
+.host_wid {
+    width: 650px;
+}
+.facility_option {
+    width: 75px;
+}
+.searchlog_table {
+    width: 100%;
+}
+.searchlog_page {
+    text-align: right;
+    width:60px;
+}
+.log_search_date {
+    width: 140px;
+}
+.log_search_host {
+    width: 120px;
+}
+.log_search_more {
+    width: 80px;
+}
+th.log_search {
+    font-size: 10px;
+}
+table.log_search_table {
+    table-layout:fixed;
+    word-wrap:break-word;
+}
+
+.value_search_host {
+    width: 100%;
+    word-wrap:break-word;
+}
+
+.row_border {
+    padding: 8px;
+    line-height: 1.846;
+    vertical-align: top;
+    border-top: 1px solid #dddddd;
+}
+

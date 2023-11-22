@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title><<TITLE>></title>
+  <<JAVASCRIPT>>
+  <meta charset="EUC-JP">
+  <link rel="stylesheet" href="../../../css/bootstrap/css/bootstrap-paper.css">
+  <link rel="stylesheet" href="../../../js/datetimepiker/build/jquery.datetimepicker.min.css">
+  <script src="../../../js/jquery-3.1.1.min.js"></script>
+  <script src="../../../js/jquery-ui.min.js"></script>
+  <script src="../../../js/datetimepiker/build/jquery.datetimepicker.full.min.js"></script>
+  <script src="../../../js/datepiker.js"></script>
+  <script src="../../../css/bootstrap/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="../../../css/style.css">
+  <link rel="stylesheet" href="../../../admin/sylas.css">
+</head>
+
+<body>
+<header class="">
+  <nav class="navbar navbar-default navmargin">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#gmenu">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <div class="navbar-brand"></div>
+    </div>
+
+
+    <div id="gmenu" class="collapse navbar-collapse">
+      <ul class="nav navbar-nav navbar-right ">
+<<START_TAB>>
+<li class="<<ACTIVE>>"><a href="#" onClick="dgpSubmit('<<URL>>')"><span class="glyphicon glyphicon-user" aria-hidden="true"></span><<NAME>></a></li>
+<<END_TAB>>
+<li class=""><a href="#" onClick="dgpSubmit('../../logout.php')"><span class="glyphicon glyphicon-user" aria-hidden="true"></span>ログアウト</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container-fluid fix-padding">
+  </div>
+</header>
+
+<div class="container-fluid">
+  <!-- 左グリッド  -->
+  <div class="row">
+    <!-- 左ナビゲーションバー -->
+    <nav class="aside col-sm-2 col-sm-offset-1">
+      <div class="panel panel-default">
+        <ul class="list-group">
+          <<START_MENU>>
+            <a class="list-group-item  <<ACTIVE>>" href="#"	onClick="dgpSubmit('<<URL>>')"><<NAME>></a>
+          <<END_MENU>>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- 右グリッド  -->
+    <div class="col-sm-8">
+      <!-- エラーメッセージ -->
+
+      <!-- メインコンテンツ -->
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">簡易ログ検索</h3>
+        </div>
+        <div class="ErrorMessage"></div>
+        <div class="row panel-body">
+          <!-- フォーム -->
+          <div class="col-sm-10 col-sm-offset-1">
+            <form class="form-horizontal" method="post" action="index.php">
+              <div class="form-group well">
+
+                <<MESSAGE>>
+                <div class="form-group">
+                  <label for="user" class="col-sm-4 control-label">ロググループ</label>
+                  <div class="col-sm-2">
+                    <select name="loggroup" class="logname">
+                    <<LOG_OPTION>>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="user" class="col-sm-4 control-label">プライオリティ</label>
+                  <div class="col-sm-2">
+                  <select name="priority" class="prim">
+                  <<PRIORITY_OPTION>>
+                  </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="user" class="col-sm-4 control-label">ホスト名</label>
+                  <div class="col-sm-8">
+                    <input type="text" class="form-control"  name="hostname" maxlength=1024 size="35" value="<<HOSTNAME>>">
+                    <br><font size=1>※スペース区切りで複数指定可</font>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="user" class="col-sm-4 control-label">キーワード</label>
+                  <div class="col-sm-8">
+                    <input type="text" class="form-control" name="keyword" maxlength="256" size="35" value="<<KEYWORD>>">
+                    <input type="radio" name="searchtype" value="0" <<CHECKED0>>>AND
+                    <input type="radio" name="searchtype" value="1" <<CHECKED1>>>OR
+                    <input type="radio" name="searchtype" value="2" <<CHECKED2>>>正規表現
+                    <br><font size=1>※スペース区切りで複数指定可</font>
+                  </div>
+ 
+                <div class="form-group">
+                  <label for="start" class="col-sm-4 control-label">期間</label>
+                  <div class="col-sm-8">
+                    <input class="datetimepicker" type="text" name="startdate" value="<<STARTDATE>>">
+                    -
+                    <input class="datetimepicker" type="text" name="enddate" value="<<ENDDATE>>">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="user" class="col-sm-4 control-label">検索結果表示件数</label>
+                  <div class="col-sm-8">
+                    <input type="text" name="resultline" list="linetype" value="<<DEFLINE>>">
+                    <datalist id="linetype">
+                        <option value="100"></option>
+                        <option value="500"></option>
+                        <option value="1000"></option>
+                    </datalist>
+                  </div>
+                </div>
+
+
+                <!-- ボタン -->
+                <div class="form-group">
+                  <div class="col-sm-10">
+                    <button type="submit" name="search_button" value="" class="btn btn-primary">検索</button>
+                    <button type="button" value="" class="btn btn-primary" onClick="dgpSubmit('index.php')">クリア</button>
+                    <button type="submit" name="download_button" value="" class="btn btn-primary">CSVダウンロード</button>
+                  </div>
+<<SK>>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <<COMMENT_START>>
+      <div class="panel-body">
+        <table class="searchlog_table">
+          <tr>
+            <td>[全 <<SEARCH_COUNT>> 件]</td>
+            <td class="searchlog_page"><<PRE>></td>
+            <td class="searchlog_page"><<NEXT>></td>
+          </tr>
+        </table>
+        <table class="table table-condensed log_search_table">
+          <tr class="success">
+            <th class="log_search log_search_date">日付</th>
+            <th class="log_search log_search_host">ホスト</th>
+            <th class="log_search log_search_message">メッセージ</th>
+          </tr>
+          <<STARTLOOP>>
+          <tr>
+            <td class="value_search"><<LOG_DATE>></td>
+            <td class="value_search"><<LOG_HOST>></td>
+            <td class="value_search_msg"><<LOG_MESSAGE>></td>
+          </tr>
+          <<ENDLOOP>>
+        </table>
+        <<HIDDEN>>
+      </div>
+    </div>
+    <<COMMENT_END>>
+  </div>
+</div>
+<footer class="footer nav navbar-default">
+    <nav class="pull-right">
+      <div class="navbar-brand"></div>
+    </nav>
+</footer>
+
+<form method="post" name="common">
+  <<SK>>
+</form>
+
+</body>
+
+</html>

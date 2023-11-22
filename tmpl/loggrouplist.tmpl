@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <title><<TITLE>></title>
+  <<JAVASCRIPT>>
+  <meta charset="EUC-JP">
+  <link rel="stylesheet" href="../../../../css/bootstrap/css/bootstrap-paper.css">
+  <script src="../../../../js/jquery-3.1.1.min.js"></script>
+  <script src="../../../../js/jquery-ui.min.js"></script>
+  <script src="../../../../css/bootstrap/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="../../../../css/style.css">
+  <link rel="stylesheet" href="../../../../admin/sylas.css">
+</head>
+
+<body>
+
+<header class="">
+  <nav class="navbar navbar-default navmargin">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#gmenu">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <div class="navbar-brand"></div>
+    </div>
+
+    <div id="gmenu" class="collapse navbar-collapse">
+      <ul class="nav navbar-nav navbar-right ">
+<<START_TAB>>
+        <li class="<<ACTIVE>>">
+          <a href="#" onClick="dgpSubmit('<<URL>>')"><span class="glyphicon glyphicon-user" aria-hidden="true"></span><<NAME>></a>
+        </li>
+<<END_TAB>>
+        <li class="">
+          <a href="#" onClick="dgpSubmit('../../../logout.php')"><span class="glyphicon glyphicon-user" aria-hidden="true"></span>ログアウト</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<div class="container-fluid">
+  <!-- 左グリッド  -->
+  <div class="row">
+    <!-- 左ナビゲーションバー -->
+    <nav class="aside col-sm-2 col-sm-offset-1">
+      <div class="panel panel-default">
+        <ul class="list-group">
+<<START_MENU>>
+          <a class="list-group-item  <<ACTIVE>>" href="#" onClick="dgpSubmit('<<URL>>')"><<NAME>></a>
+<<END_MENU>>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- 右グリッド  -->
+    <div class="col-sm-8">
+
+      <!-- メインコンテンツ -->
+      <div class="panel panel-primary">
+
+        <div class="panel-heading">
+          <h3 class="panel-title">ロググループ一覧</h3>
+        </div>
+
+
+        <div class="row panel-body">
+          <!-- フォーム -->
+          <form  class="col-sm-10 col-sm-offset-1 well" method="post" name="form_main" action="index.php">
+            <!-- エラーメッセージ -->
+            <div class="ErrorMessage">
+              <<MESSAGE>>
+            </div>
+
+            <div class="row row_border">
+                <div class="col-sm-2 bg-active">ロググループ名</div>
+                <div class="col-sm-2">検索ログ</div>
+                <div class="col-sm-7">ホスト</div>
+                <div class="col-sm-1 search_ref"></div>
+            </div>
+
+            <<STARTLOOP>>
+            <div class="row row_border">
+              <div class="col-sm-2"><<LOGGROUPNAME>></div>
+              <div class="col-sm-2"><<LOG>></div>
+              <div class="col-sm-7" style="word-break: break-all"><<HOST>></div>
+              <div class="col-sm-1 value_center">
+                <input type="button" class="list_mod_btn" onClick="sysSubmit('mod.php', <<GROUP_ID>>)" title="編集">
+              </div>
+            </div>
+            <<ENDLOOP>>
+
+            <div class="row" style="margin-top:20px;">
+              <div class="col-sm-2">
+                <button type="submit" name="add" value="" class="btn btn-primary" >登録</button>
+              </div>
+            </div>
+            <input type="hidden" name="group_id">
+            <<SK>>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer nav navbar-default">
+    <nav class="pull-right">
+      <div class="navbar-brand"></div>
+    </nav>
+</footer>
+
+<form method="post" name="common">
+  <<SK>>
+</form>
+
+</body>
+</html>

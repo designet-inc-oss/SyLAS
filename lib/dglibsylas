@@ -1,0 +1,3561 @@
+<?php
+/*
+ * postLDAPadmin
+ *
+ * Copyright (C) 2006,2007 DesigNET, INC.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ */
+
+/***********************************************************
+ * SyLAS用ライブラリ
+ *
+ * $RCSfile: dglibsylas,v $
+ * $Revision: 1.23 $
+ * $Date: 2014/07/22 02:50:41 $
+ **********************************************************/
+define("LOGNAME_MAXLEN",     64);
+define("FACILITY_MAXLEN",    64);
+define("S_TAB_MAXLEN",       64);
+define("APPLICATION_MAXLEN", 64);
+define("MAXKEYWORD",        "128");
+define("MINKEYWORD",        "1");
+define("MAXSUBJECT",        "256");
+define("MINSUBJECT",        "0");
+define("MAXBODY",           "512");
+define("MINBODY",           "0");
+define("LOCK",              "lock");
+define("DISP_KEY",          "40");
+define("MAILTO_DISP",       "メール宛先");
+define("MAILTO_LOG",        "Mail To");
+define("MAILTO_SET",        "\$ActionMailTo");
+define("IP_DISP",           "送信元IPアドレス");
+define("IP_LOG",            "IP Address");
+define("IP_SET",            "\$fromhost-ip");
+define("KEYWORD_DISP",      "キーワード");
+define("KEYWORD_LOG",       "Keyword");
+define("KEYWORD_SET",       "\$msg contains");
+define("SUBJECT_DISP",      "メール件名");
+define("SUBJECT_LOG",       "Mail Subject");
+define("SUBJECT_SET",       "\$template mail_subject");
+define("BODY_DISP",         "メール本文");
+define("BODY_LOG",          "Mail Body");
+define("BODY_SET",           "\$template mail_body");
+define("LOG_NAME_DISP",     "ログ名");
+define("LOG_NAME_LOG",      "Log name");
+define("FACILITY_DISP",     "ファシリティ");
+define("FACILITY_LOG",      "Facility");
+define("FACILITY_SET",      "\$syslogfacility");
+define("DEGREE_SET",        "\$syslogseverity");
+define("ALL_FACILITY",      ".ALL");
+define("ALL_TYPE",          "すべて");
+define("SEARCH_TAB_DISP",   "検索テーブル");
+define("SEARCH_TAB_LOG",    "Search table");
+define("APPLICATION_DISP",  "アプリケーション");
+define("APPLICATION_LOG",   "Application");
+define("CHECK_SQL",         "SELECT * FROM loginfo WHERE log_name=\"%s\";");
+define("HOSTCHECK_SQL",     "select * from search_hosts " . 
+                            "left join hosts on " . 
+                            "search_hosts.host_id = hosts.host_id " . 
+                            "where hosts.host_id=\"%s\";");
+define("HOSTDEL_SQL",       "DELETE FROM hosts WHERE host_id=\"%s\";");
+define("CHECK_GROUP_SQL",   "SELECT * FROM loggroup WHERE group_name=\"%s\";");
+define("ELS_KEYWORD_MAXLEN", 256);
+define("ELS_HOSTNAME_MAXLEN", 1024);
+define("DHCP_IPADDRESS_MAXLEN", 39);
+define("DHCP_MACADDRESS_MAXLEN", 128);
+define("DHCP_INTERFACE_MAXLEN", 32);
+define("EASY_SEARCH_SQL",   "SELECT DeviceReportedTime, FromHost, Message " . 
+                            "FROM %s " .
+                            "WHERE %s " . 
+                            "ORDER BY DeviceReportedTime DESC;");
+define("DHCP_SEARCH_SQL",   "SELECT DeviceReportedTime, FromHost, Message " . 
+                            "FROM %s " .
+                            "WHERE %s %s %s" . 
+                            "ORDER BY DeviceReportedTime ASC;");
+define("EASY_ALLSEARCH_SQL","SELECT DeviceReportedTime, FromHost, Message " . 
+                            "FROM %s " .
+                            "ORDER BY DeviceReportedTime DESC;");
+define("ESL_LOGGROUP_SQL",  "SELECT A.group_id, A.group_name, " . 
+                            "C.facility_name, C.search_tab, C.app_name, ". 
+                            "D.host_id, D.host_name " . 
+                            "FROM loggroup A, search_hosts B, " .
+                            "loginfo C, hosts D " . 
+                            "WHERE A.group_id = B.group_id " .
+                            "AND A.log_id = C.log_id " . 
+                            "AND B.host_id = D.host_id " .
+                            "AND A.group_id =\"%s\" ORDER BY host_id;");
+//define("ADD_MODE",           0);
+define("UPDATE_MODE",        1);
+define("START",              0);
+define("END",                1);
+define("BEGIN",             "begin");
+define("ROLLBACK",          "rollback");
+define("COMMIT",            "commit");
+define("CHECK_SH_SQL",      "SELECT * FROM search_hosts WHERE group_id=%s;");
+define("DELETE_SH_SQL",     "DELETE FROM search_hosts WHERE group_id=%s;");
+define("INSERT_SH_SQL",     "INSERT INTO search_hosts (group_id, host_id) " .
+                            "VALUES (\"%s\", \"%s\");");
+define("MYSQL",             "mysql");
+define("ELASTICSEARCH",     "elasticsearch");
+
+/* DBに格納されるファシリティに対応する値 */
+define("BAD_FACILITY",     "10000");
+$mysql_facilitynumbers = array(
+                         "kern"     => 0,
+                         "user"     => 1,
+                         "mail"     => 2,
+                         "daemon"   => 3,
+                         "auth"     => 4,
+                         "security" => 4,
+                         "syslog"   => 5,
+                         "lpr"      => 6,
+                         "news"     => 7,
+                         "uucp"     => 8,
+                         "cron"     => 9,
+                         "authpriv" => 10,
+                         "ftp"      => 11,
+                         "local0"   => 16,
+                         "local1"   => 17,
+                         "local2"   => 18,
+                         "local3"   => 19,
+                         "local4"   => 20,
+                         "local5"   => 21,
+                         "local6"   => 22,
+                         "local7"   => 23,
+                         ".ALL"     => 99);
+
+/* セレクトボックスに使用する値 */
+$facility_arr = array("すべて"   => "-1",
+                      "kern"     => "0",
+                      "user"     => "1",
+                      "mail"     => "2",
+                      "daemon"   => "3",
+                      "auth"     => "4",
+                      "syslog"   => "5",
+                      "lpr"      => "6",
+                      "news"     => "7",
+                      "uucp"     => "8",
+                      "cron"     => "9",
+                      "authpriv" => "10",
+                      "ftp"      => "11",
+                      "local0"   => "16",
+                      "local1"   => "17",
+                      "local2"   => "18",
+                      "local3"   => "19",
+                      "local4"   => "20",
+                      "local5"   => "21",
+                      "local6"   => "22",
+                      "local7"   => "23");
+
+$degree_arr = array ("すべて"  => "-1",
+                      "emerg"  => "0",
+                      "alert"  => "1",
+                      "crit"   => "2",
+                      "err"    => "3",
+                      "warn"   => "4",
+                      "notice" => "5",
+                      "info"   => "6",
+                      "debug"   => "7"
+                    );
+
+/* ================= 入力値チェック関数 ================= */
+/*********************************************************
+ * check_strlen()
+ *
+ * 文字列長を検査する。
+ *
+ * [引数]
+ *        $string      検査する文字列
+ *        $maxlen      最大文字長
+ *        $minlen      最小文字長
+ *                     (-1の時は最小値のチェックを行なわない)
+ *
+ * [返り値]
+ *       0             正常
+ *       1             文字長エラー
+ **********************************************************/
+function check_strlen($string, $maxlen, $minlen = -1)
+{
+    $length = strlen($string);
+    if ($length > $maxlen || $length < $minlen) {
+        return 1;
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * check_alpha_bars()
+ *
+ * アルファベット、"-"、"_"
+ *                 のみを許可する入力値のチェック関数
+ * ファシリティのみ半角スペースを許可する。
+ *
+ * [引数]
+ *        $string      検査する文字列
+ *        $maxlen      最大文字長
+ *        $minlen      最小文字長
+ *                     (-1の時は最小値のチェックを行なわない)
+ *        $isFacil     ファシリティチェック時にTRUEが渡される
+ *
+ * [返り値]
+ *       0             正常
+ *       1             文字長エラー
+ *       2             文字種エラー
+ **********************************************************/
+function check_alpha_bars($string, $maxlen, $minlen = -1, $isFacil = FALSE)
+{
+    $length = strlen($string);
+    if ($length > $maxlen || $length < $minlen) {
+        return 1;
+    }
+
+    /* 半角英大小文字、数字、特定記号のみ許可 */
+    $num = "0123456789";
+    $sl = "abcdefghijklmnopqrstuvwxyz";
+    $ll = strtoupper($sl);
+    $sym = $isFacil === TRUE ? " -_" : "-_";
+    $allow_letter = $num . $sl . $ll . $sym;
+    if (strspn($string, $allow_letter) != $length) {
+        return 2;
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * check_alpha_bars_dot()
+ *
+ * アルファベット、"-"、"_"、"."
+ *                 のみを許可する入力値のチェック関数
+ *
+ * [引数]
+ *        $string      検査する文字列
+ *        $maxlen      最大文字長
+ *        $minlen      最小文字長
+ *                     (-1の時は最小値のチェックを行なわない)
+ *
+ * [返り値]
+ *       0             正常
+ *       1             文字長エラー
+ *       2             文字種エラー
+ **********************************************************/
+function check_alpha_bars_dot($string, $maxlen, $minlen = -1, $nbspAllow = 0)
+{
+    $length = strlen($string);
+    if ($length > $maxlen || $length < $minlen) {
+        return 1;
+    }
+
+    /* 半角英大小文字、数字、特定記号のみ許可 */
+    $num = "0123456789";
+    $sl  = "abcdefghijklmnopqrstuvwxyz";
+    $ll  = strtoupper($sl);
+    $sym = $nbspAllow !== 1 ? "-_." : " -_.";
+    $allow_letter = $num . $sl . $ll . $sym;
+    if (strspn($string, $allow_letter) != $length) {
+        return 2;
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * check_keyword()
+ *
+ * 簡易ログ検索画面のキーワードの入力値チェックを行なう
+ *
+ * [引数]
+ *        $string      検査する文字列
+ *        $maxlen      最大文字長
+ *        $minlen      最小文字長
+ *                     (-1の時は最小値のチェックを行なわない)
+ *
+ * [返り値]
+ *       0             正常
+ *       1             文字長エラー
+ *       2             文字種エラー
+ *       3             検索条件不正
+ **********************************************************/
+function check_keyword($searchtype, $string, $maxlen, $minlen = -1)
+{
+    $length = strlen($string);
+    if ($length > $maxlen || $length < $minlen) {
+        return 1;
+    }
+
+    /* 半角英大小文字、数字、特定記号のみ許可 */
+    $num = "0123456789";
+    $sl = "abcdefghijklmnopqrstuvwxyz";
+    $ll = strtoupper($sl);
+    $sym = "!\"#$%&'()=-~^|@`[{;+:*]},<.>\/?_ ";
+    $allow_letter = $num . $sl . $ll . $sym;
+    if (strspn($string, $allow_letter) != $length) {
+        return 2;
+    }
+
+    /* 正規表現検索で、文字列先頭が"*"のときは形式不正で返す */
+    if ($searchtype === "2") {
+        $top = substr($string, 0, 1);
+        if ($top === "*" || $top === "+" || $top === "?") {
+            return 3;
+        }
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * check_ipaddress()
+ *
+ * dhcpログ検索画面のIPアドレスの入力値チェックを行なう
+ *
+ * [引数]
+ *        $string      検査する文字列
+ *        $maxlen      最大文字長
+ *
+ * [返り値]
+ *       0             正常
+ *       1             文字長エラー
+ *       2             文字種エラー
+ **********************************************************/
+function check_ipaddress($string, $maxlen)
+{
+    $length = strlen($string);
+    if ($length > $maxlen) {
+        return 1;
+    }
+
+    /* 半角英大小文字、数字、特定記号のみ許可 */
+    $num = "0123456789";
+    $sl = "abcdef";
+    $ll = strtoupper($sl);
+    $sym = ".:";
+    $allow_letter = $num . $sl . $ll . $sym;
+    if (strspn($string, $allow_letter) != $length) {
+        return 2;
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * check_macaddress()
+ *
+ * dhcpログ検索画面のMACアドレスの入力値チェックを行なう
+ *
+ * [引数]
+ *        $string      検査する文字列
+ *        $maxlen      最大文字長
+ *
+ * [返り値]
+ *       0             正常
+ *       1             文字長エラー
+ *       2             文字種エラー
+ **********************************************************/
+function check_macaddress($string, $maxlen)
+{
+    $length = strlen($string);
+    if ($length > $maxlen) {
+        return 1;
+    }
+
+    /* 半角英大小文字、数字、特定記号のみ許可 */
+    $num = "0123456789";
+    $sl = "abcdefghijklmnopqrstuvwxyz";
+    $ll = strtoupper($sl);
+    $sym = ":";
+    $allow_letter = $num . $sl . $ll . $sym;
+    if (strspn($string, $allow_letter) != $length) {
+        return 2;
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * check_interface()
+ *
+ * dhcpログ検索画面のインタフェースの入力値チェックを行なう
+ *
+ * [引数]
+ *        $string      検査する文字列
+ *        $maxlen      最大文字長
+ *
+ * [返り値]
+ *       0             正常
+ *       1             文字長エラー
+ *       2             文字種エラー
+ **********************************************************/
+function check_interface($string, $maxlen)
+{
+    $length = strlen($string);
+    if ($length > $maxlen) {
+        return 1;
+    }
+
+    /* 半角英大小文字、数字、特定記号のみ許可 */
+    $num = "0123456789";
+    $sl = "abcdefghijklmnopqrstuvwxyz";
+    $ll = strtoupper($sl);
+    $allow_letter = $num . $sl . $ll;
+    if (strspn($string, $allow_letter) != $length) {
+        return 2;
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * check_input_value()
+ *
+ * 入力値チェック関数
+ * ログ名の重複チェックまで行なう。
+ *
+ * [引数]
+ *      $post           画面で入力された値
+ *      $conn           MySQLの接続オブジェクト
+ *                      (登録の場合、接続せずそのまま使用)
+ *      $mode           追加、更新モード
+ *                      0：追加
+ *                      1：更新
+ *
+ * [返り値]
+ *      TRUE            正常
+ *      FALSE           異常
+ ********************************************************/
+function check_logsearch_input_value(&$post, &$conn, $mode = 0)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* ログ名 */
+    if ($mode != UPDATE_MODE) {
+        if ($post["log_name"] != "") {
+            $ret = check_strlen($post["log_name"], LOGNAME_MAXLEN);
+            if ($ret === 1) {
+                $err_msg = sprintf($msgarr['28002'][SCREEN_MSG], LOG_NAME_DISP);
+                $log_msg = sprintf($msgarr['28002'][LOG_MSG], LOG_NAME_LOG);
+                return FALSE;
+            }
+
+        } else {
+            $err_msg = sprintf($msgarr['28001'][SCREEN_MSG], LOG_NAME_DISP);
+            $log_msg = sprintf($msgarr['28001'][LOG_MSG], LOG_NAME_LOG);
+            return FALSE;
+        }
+    }
+
+    /* ログ解析タイプ */
+    if ($post["log_type"] === "----------") {
+        /* 空にする */
+        $post["log_type"] = "";
+    }
+
+    /* ファシリティ */
+    if ($post["facility"] != "" && !preg_match('/^\s+$/', $post["facility"])) {
+        $ret = check_alpha_bars($post["facility"], FACILITY_MAXLEN, -1, TRUE);
+        if ($ret != 0) {
+            $err_msg = sprintf($msgarr['28002'][SCREEN_MSG], FACILITY_DISP);
+            $log_msg = sprintf($msgarr['28002'][LOG_MSG], FACILITY_LOG);
+            return FALSE;
+        }
+    } else {
+        $post["facility"] = ALL_FACILITY;
+    }
+
+    /* 検索テーブル */
+    if ($post["search_tab"] != "") {
+        $ret = check_alpha_bars($post["search_tab"], S_TAB_MAXLEN);
+        if ($ret != 0) {
+            $err_msg = sprintf($msgarr['28002'][SCREEN_MSG], SEARCH_TAB_DISP);
+            $log_msg = sprintf($msgarr['28002'][LOG_MSG], SEARCH_TAB_LOG);
+            return FALSE;
+        }
+    }
+
+    /* アプリケーション */
+    if ($post["app_name"] != "") {
+        $ret = check_alpha_bars($post["app_name"], APPLICATION_MAXLEN);
+        if ($ret != 0) {
+            $err_msg = sprintf($msgarr['28002'][SCREEN_MSG], APPLICATION_DISP);
+            $log_msg = sprintf($msgarr['28002'][LOG_MSG], APPLICATION_LOG);
+            return FALSE;
+        }
+    }
+    /* === 検索ログ名の重複チェック === */
+
+    /* MySQL接続 */
+    $conn = MySQL_connect_server();
+    if ($conn === FALSE) {
+        return FALSE;
+    }
+
+    if ($mode != UPDATE_MODE) {
+        /* MySQLからログ管理テーブルの情報を取得 */
+        $sql = sprintf(CHECK_SQL, mysqli_real_escape_string($conn, 
+                                                            $post["log_name"]));
+        $result = MySQL_exec_query($conn, $sql);
+        if ($result === FALSE) {
+            mysqli_close($conn);
+            return FALSE;
+        }
+
+        /* MySQLに登録されたログ管理テーブルの情報を配列に格納 */
+        MySQL_get_data($result, $data);
+
+        /* 重複があった場合(ログ名で限定した情報が1つ以上取得できた場合 */
+        if(count($data) != 0) {
+            mysqli_close($conn);
+            $err_msg = sprintf($msgarr['28003'][SCREEN_MSG],
+                               escape_html($post["log_name"]));
+            $log_msg = sprintf($msgarr['28003'][LOG_MSG], $post["log_name"]);
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+/* =================== MySQL関連関数 =================== */
+
+/*********************************************************
+ * MySQL_connect_server()
+ *
+ * MySQLへ接続する。(接続先は設定ファイルにて決める)
+ *
+ * [引数]
+ *       なし
+ *
+ * [返り値]
+ *       $conn         MySQLへの接続オブジェクト
+ *       FALSE         異常
+ **********************************************************/
+function MySQL_connect_server()
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* 接続に必要な情報を変数に代入 */
+    $server = $web_conf["sylas"]["dbserver"];
+    $port   = $web_conf["sylas"]["dbserverport"];
+    $dbuser = $web_conf["sylas"]["dbuser"];
+    $dbpass = $web_conf["sylas"]["dbpassword"];
+    $dbname = $web_conf["sylas"]["dataname"];
+
+    /* 接続失敗時、以下のようなWarningが出力されるのを抑制するため、      *
+     * mysql_connectに「＠」をつけて処理する                              *
+     *                                                                    *
+     * Warning: mysql_connect() [function.mysql-connect]:                 *
+     * Lost connection to MySQL server at 'reading initial communication  *
+     * packet', system error                                              */
+
+    /* データベース接続 */
+    $conn = @mysqli_connect($server, $dbuser, $dbpass, "", $port);
+    if ($conn === FALSE) {
+        $ip_addr = $web_conf["sylas"]["dbserver"] . ":" 
+                   . $web_conf["sylas"]["dbserverport"];
+        $err_msg = sprintf($msgarr['27001'][SCREEN_MSG], $ip_addr);
+        $log_msg = sprintf($msgarr['27001'][LOG_MSG], $ip_addr);
+        return FALSE;
+    }
+
+    return $conn;
+}
+
+/*********************************************************
+ * MySQL_exec_query()
+ *
+ * 引数に渡されたMySQLへの接続オブジェクトに対してクエリ
+ * を送信し、得られたデータを配列にして返す。
+ *
+ * [引数]
+ *       $conn         MySQLへの接続オブジェクト
+ *       $sql          SQL文
+ * [返り値]
+ *       $result       クエリ実行の結果のリソース
+ *       FALSE         異常
+ **********************************************************/
+function MySQL_exec_query($conn, $sql)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* データベースを選択する */
+    $dbname = $web_conf["sylas"]["dataname"];
+    $ret = mysqli_select_db($conn, $dbname);
+    if ($ret === FALSE) {
+        $mysql_err = mysqli_error($conn);
+        $ip_addr = $web_conf["sylas"]["dbserver"] . ":" 
+                   . $web_conf["sylas"]["dbserverport"];
+        $err_msg = sprintf($msgarr['27002'][SCREEN_MSG], $ip_addr);
+        $log_msg = sprintf($msgarr['27002'][LOG_MSG], $mysql_err);
+        return FALSE;
+    }
+
+    /* クエリを実行する */
+    $result = mysqli_query($conn, $sql);
+    if ($result === FALSE) {
+        $mysql_err = mysqli_error($conn);
+        $err_msg = sprintf($msgarr['27003'][SCREEN_MSG], $mysql_err);
+        $log_msg = sprintf($msgarr['27003'][LOG_MSG], $mysql_err);
+        return FALSE;
+    }
+
+    return $result;
+}
+
+/*********************************************************
+ * MySQL_get_data()
+ *
+ * クエリを実行した結果からデータを取得し、配列に格納する
+ *
+ * [引数]
+ *       $resource     クエリ実行のリソース
+ *       $data         取得したデータを格納する配列
+ *                     (参照渡し)
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function MySQL_get_data($resource, &$data)
+{
+    /* 取得したデータを1行ずつ配列に格納する */
+    $line = array();
+    $data = array();
+    for ($i = 0; $line !== NULL; $i++) {
+        $line = mysqli_fetch_array($resource, MYSQLI_ASSOC);
+        if ($line != NULL) {
+            $data[$i] = $line;
+        }
+    }
+
+    /* 今回のクエリーで得られた結果を破棄 */
+    mysqli_free_result($resource);
+    return;
+}
+
+/*********************************************************
+ * delete_hostlist()
+ *
+ * 選択されたホストを削除する。
+ *
+ * [引数]
+ *       $hostlist      削除するホストのIDを格納した配列
+ *
+ * [返り値]
+ *       0           正常
+ *       1           異常
+ *       2           削除不可ホストあり
+ **********************************************************/
+function delete_hostlist($hostlist)
+{
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    $del_success = 0;
+
+    /* MySQL接続 */
+    $conn = MySQL_connect_server();
+    if ($conn === FALSE) {
+        return 1;
+    }
+
+    /* SQLを作成する */
+    foreach ($hostlist as $host_id) {
+        $hostcheck_sql = sprintf(HOSTCHECK_SQL, $host_id);
+        $result = MySQL_exec_query($conn, $hostcheck_sql);
+        if ($result === FALSE) {
+            /* MySQLとの接続を閉じる */
+            mysqli_close($conn);
+            return 1;
+        }
+        /* MySQLに登録された検索ホストの情報を配列に格納 */
+        MySQL_get_data($result, $data);
+        if (count($data) > 0) {
+            $err_msg .= sprintf($msgarr['28006'][SCREEN_MSG], 
+                                escape_html($data[0]["host_name"]));
+            $err_msg .= "<br>";
+            $log_msg = sprintf($msgarr['28006'][LOG_MSG], $data[0]["host_name"]);
+            result_log($log_msg, LOG_ERR);
+            $del_success = 2;
+            continue;
+        }
+        
+        /* SQL作成 */
+        $hostdel_sql = sprintf(HOSTDEL_SQL, $host_id);
+    
+        /* SQLを実行する */
+        $result = MySQL_exec_query($conn, $hostdel_sql);
+        if ($result === FALSE) {
+            /* MySQLとの接続を閉じる */
+            mysqli_close($conn);
+            return 1;
+        }
+    }
+
+    /* MySQLとの接続を閉じる */
+    mysqli_close($conn);
+
+    return $del_success;
+}
+
+/*********************************************************
+ * make_grouplist()
+ *
+ * ロググループのリストを整形する
+ *
+ * [引数]
+ *       $data              DBから取得した情報
+ *       $grouplist         整形したグループリスト
+ *                          (参照渡し)
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_grouplist($data, &$grouplist)
+{
+    foreach ($data as $line) {
+
+        $group_id   = $line["group_id"];
+        $group_name = $line["group_name"];
+        $log_name   = $line["log_name"];
+        $host_name  = $line["host_name"];
+
+        /* group_idをキーにした配列を作成する */
+        if (isset($grouplist["$group_id"]) === FALSE) {
+
+            /* 必要な情報のみ取得しておく             * 
+             * 指定のgroup_idの配列が存在しない場合は *
+             * group_name, log_name, host_nameを取得  */
+            $grouplist["$group_id"]["group_name"] = $group_name;
+            $grouplist["$group_id"]["log_name"]   = $log_name;
+            $grouplist["$group_id"]["host_name"]  = $host_name;
+
+        } else {
+            /* 指定のgroup_idの配列が存在する場合は *
+             * host_nameカンマでつなぐ              */
+            $grouplist["$group_id"]["host_name"]  .= ",$host_name";
+        }
+    }
+
+    return;
+}
+
+/*********************************************************
+ * check_groupname()
+ *
+ * グループ名の入力チェックを行なう。
+ * 入力が正常な場合、MySQLの接続オブジェクトを返す。
+ *
+ * [引数]
+ *       $conn       MySQLの接続オブジェクト
+ *       $group_name グループ名
+ *       $maxlen     グループ名の最大文字列長
+ *
+ * [返り値]
+ *       0           正常
+ *       1           入力値エラー
+ *       2           DBエラー
+ **********************************************************/
+function check_groupname(&$conn, $group_name, $maxlen, $mode = ADD_MODE)
+{
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* 入力値チェック */
+    if ($mode != UPDATE_MODE) {
+        $ret = check_strlen($group_name, $maxlen);
+        if ($ret === 1) {
+            $err_msg = sprintf($msgarr['28002'][SCREEN_MSG], GROUP_NAME_DISP);
+            $log_msg = sprintf($msgarr['28002'][LOG_MSG], GROUP_NAME_LOG);
+            return 1;
+        }
+    }
+
+    /* MySQL接続 */
+    $conn = MySQL_connect_server();
+    if ($conn === FALSE) {
+        return 2;
+    }
+
+    /* 重複チェック(追加の場合) */
+    if ($mode != UPDATE_MODE) {
+        $check_group_sql = sprintf(CHECK_GROUP_SQL,
+                                   mysqli_real_escape_string($conn, $group_name));
+
+        /* SQLを実行する */
+        $result = MySQL_exec_query($conn, $check_group_sql);
+        if ($result === FALSE) {
+            mysqli_close($conn);
+            return 2;
+        }
+
+        /* MySQLに登録されたログ管理テーブルの情報を配列に格納 */
+        MySQL_get_data($result, $data);
+
+        /* 重複があった場合(ログ名で限定した情報が1つ以上取得できた場合 */
+        if(count($data) != 0) {
+            mysqli_close($conn);
+            $err_msg = sprintf($msgarr['28003'][SCREEN_MSG],
+                               escape_html($group_name));
+            $log_msg = sprintf($msgarr['28003'][LOG_MSG], $group_name);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * add_mod_loggroup()
+ *
+ * 選択されたホストを更新する。
+ *
+ * [引数]
+ *       $conn          MySQLの接続オブジェクト
+ *       $sql_form      実行するSQL文
+ *       $group_name    グループ名
+ *       $log_id        検索ログのID
+ *
+ * [返り値]
+ *       TRUE        正常
+ *       FALSE       異常
+ **********************************************************/
+function add_mod_loggroup($conn, $sql_form, $group_name, $log_id)
+{
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* SQLを作成する */
+    if ($group_name != "") {
+    $sql = sprintf($sql_form,
+                   mysqli_real_escape_string($conn, $group_name),
+                   mysqli_real_escape_string($conn, $log_id));
+    } else {
+    $sql = sprintf($sql_form, mysqli_real_escape_string($conn, $log_id));
+    }
+
+    /* SQLを実行する */
+    $result = MySQL_exec_query($conn, $sql);
+
+
+    /* MySQLとの接続を閉じる */
+    mysqli_close($conn);
+
+    if ($result === FALSE) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*********************************************************
+ * get_data
+ *
+ * MySQLからデータを取得する
+ *
+ * [引数]
+ *       $sql                データ取得用SQL
+ *       $data               取得したホストを格納する配列
+ *                           (参照渡し)
+ *
+ * [返り値]
+ *       TRUE                正常
+ *       FALSE               異常
+ **********************************************************/
+function get_data($sql, &$data)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+
+    /* MySQL接続 */
+    $conn = MySQL_connect_server();
+    if ($conn === FALSE) {
+        return FALSE;
+    }
+
+    /* MySQLからログ管理テーブルの情報を取得 */
+    $result = MySQL_exec_query($conn, $sql);
+    if ($result === FALSE) {
+        mysqli_close($conn);
+        return FALSE;
+    }
+
+    /* MySQLに登録されたログ管理テーブルの情報を配列に格納 */
+    MySQL_get_data($result, $data);
+
+    /* MySQLとの接続を閉じる */
+    mysqli_close($conn);
+
+    return TRUE;
+}
+
+/*********************************************************
+ * delete_a_data
+ *
+ * MySQLからデータを取得する
+ *
+ * [引数]
+ *       $delete_sql[]       削除用SQL文の配列
+ *       $check_sql          外部キーチェック用SQL
+ *
+ * [返り値]
+ *       TRUE                   正常
+ *       FALSE                  異常
+ **********************************************************/
+function delete_a_data($delete_sql, $check_sql = NULL)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* MySQL接続 */
+    $conn = MySQL_connect_server();
+    if ($conn === FALSE) {
+        return FALSE;
+    }
+
+    /* 外部キーチェック */
+    if ($check_sql != NULL) {
+        $data = array();
+        $result = MySQL_exec_query($conn, $check_sql);
+        if ($result === FALSE) {
+            /* MySQLとの接続を閉じる */
+            $err_msg = sprintf($msgarr['27003'][SCREEN_MSG], $check_sql);
+            $log_msg = sprintf($msgarr['27003'][LOG_MSG], $check_sql);
+            mysqli_close($conn);
+            return FALSE;
+        }
+
+        /* MySQLに登録されたログ管理テーブルの情報を配列に格納 */
+        MySQL_get_data($result, $data);
+
+        /* 重複があった場合(ログ名で限定した情報が1つ以上取得できた場合 */
+        if(count($data) != 0) { 
+            $err_msg = $msgarr['28013'][SCREEN_MSG];
+            $log_msg = $msgarr['28013'][LOG_MSG];
+            mysqli_close($conn);
+            return FALSE;
+        }
+    }   
+
+    /* SQLを実行 */
+    foreach ($delete_sql as $tmp_sql) {
+        $result = MySQL_exec_query($conn, $tmp_sql);
+        if ($result === FALSE) {
+            mysqli_close($conn);
+            $err_msg = sprintf($msgarr['27003'][SCREEN_MSG], $tmp_sql);
+            $log_msg = sprintf($msgarr['27003'][LOG_MSG], $tmp_sql);
+            return FALSE;
+        }
+    }
+
+    /* MySQLとの接続を閉じる */
+    mysqli_close($conn);
+
+    return TRUE;
+}
+
+/*********************************************************
+ * make_dhcp_log_option()
+ *
+ * ロググループのセレクトボックスのオプションを作成
+ * (dhcpログ検索画面)
+ *
+ * [引数]
+ *       $sql                ロググループを取得するSQL
+ *       $post_group_id      selectedにするログ
+ *       $option             
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_dhcp_log_option($sql, $post_group_id, &$option)
+{
+    /* ロググループ情報をMySQLから取得 */
+    $ret = get_data($sql, $data);
+    if ($ret === FALSE) {
+        return FALSE;
+    }
+    /*ログの種類がdhcpのグループが存在しないとき*/
+    if (empty($data)) {
+        /* セレクトボックスを作成 */
+        $option .= <<<HERE
+<option value="-1" selected>----------</option>
+
+HERE;
+    } else {
+        /*ログの種類がdhcpのグループが存在するとき*/
+        foreach ($data as $one_data) {
+            $group_name = escape_html($one_data["group_name"]);
+            $group_id   = escape_html($one_data["group_id"]);
+            /* POSTで渡ってきた値と同じ時(値保持) */
+            if ($one_data["group_id"] == $post_group_id) {
+                $option .= <<<HERE
+<option value="$group_id" selected>$group_name</option>
+
+HERE;
+            } else {
+                $option .= <<<HERE
+<option value="$group_id">$group_name</option>
+
+HERE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+
+/*********************************************************
+ * make_log_option()
+ *
+ * ロググループのセレクトボックスのオプションを作成
+ * (簡易ログ検索画面)
+ *
+ * [引数]
+ *       $sql                ロググループを取得するSQL
+ *       $post_group_id      selectedにするロググループ
+ *       $option             HTML(参照渡し)
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_log_option($sql, $post_group_id, &$option)
+{
+
+    /* ロググループ情報をMySQLから取得 */
+    $ret = get_data($sql, $data);
+    if ($ret === FALSE) {
+        return FALSE;
+    }
+
+    /* セレクトボックスを作成 */
+    $option .= <<<HERE
+<option value="-1" selected>----------</option>
+
+HERE;
+
+    foreach ($data as $one_data) {
+        $group_name = escape_html($one_data["group_name"]);
+        $group_id   = escape_html($one_data["group_id"]);
+        /* POSTで渡ってきた値と同じ時(値保持) */
+        if ($one_data["group_id"] == $post_group_id) {
+            $option .= <<<HERE
+<option value="$group_id" selected>$group_name</option>
+
+HERE;
+        } else {
+            $option .= <<<HERE
+<option value="$group_id">$group_name</option>
+
+HERE;
+        }
+    }
+
+    return TRUE;
+}
+
+/*********************************************************
+ * make_priority_option()
+ *
+ * プライオリティのセレクトボックスのオプションを作成
+ * (簡易ログ検索画面)
+ *
+ * [引数]
+ *       $priority           selectedにするプライオリティ
+ *       $option             HTML(参照渡し)
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_priority_option($priority, &$option)
+{
+    /* セレクトボックスに使用する値を配列に入れる */
+    $arr = array("-1" => "----------", 
+                  "7" => "debug", 
+                  "6" => "info", 
+                  "5" => "notice", 
+                  "4" => "warn", 
+                  "3" => "err", 
+                  "2" => "crit",
+                  "1" => "alert", 
+                  "0" => "emerg"
+                );
+
+    foreach ($arr as $key => $value) {
+
+        /* POSTで渡ってきた値と同じ時(値保持) */
+        if ($priority == $key) {
+            $option .= <<<HERE
+<option value="$key" selected>$value</option>
+
+HERE;
+        } else {
+            $option .= <<<HERE
+<option value="$key">$value</option>
+
+HERE;
+        }
+    }
+
+    return;
+}
+
+/*********************************************************
+ * make_checked_radio()
+ *
+ * 指定のラジオボタンにチェックを入れる
+ * (簡易ログ検索画面)
+ *
+ * [引数]
+ *       $radio              checkedにするラジオボタン
+ *       $option             checked/""(参照渡し)
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_checked_radio($radio, &$option)
+{
+    $i = 0;
+    foreach($option as $val) {
+        if ($i == $radio) {
+            $option[$i] = "checked";
+        }
+        $i++;
+    }
+
+    return;
+}
+
+/*********************************************************
+ * make_year_option()
+ *
+ * 年、月、日、時、分、秒のセレクトボックスのオプションを作成
+ * (簡易ログ検索画面)
+ *
+ * [引数]
+ *       $year               selectedにする年
+ *       $option             HTML(参照渡し)
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_year_option($year, &$option)
+{
+    /* 現在の西暦取得(タイムゾーンはphp.iniで設定) */
+    $now_year = date("Y");
+
+    $loopflg = 0;
+    for ($count = $now_year - 11; $count <= $now_year; $count++) {
+
+        /* ループの一回目は"--"を入れる */
+        if ($loopflg === 0) {
+            $option .= <<<HERE
+<option value="--">----</option>
+HERE;
+            $loopflg = 1;
+            continue;
+        }
+        /* オプション作成 */
+        if ($year == $count) {
+            $option .= <<<HERE
+<option value="$count" selected>$count</option>
+HERE;
+        } else {
+            $option .= <<<HERE
+<option value="$count">$count</option>
+HERE;
+        }
+    }
+}
+
+/*********************************************************
+ * check_time_format()
+ *
+ * ログ検索の検索条件をチェックする
+ *
+ * [引数]
+ *       $time          日付情報
+ *       $mode              開始 or 終了
+ *
+ * [返り値]
+ *       TRUE                正常
+ *       FALSE               異常
+ **********************************************************/
+function check_time_format($time)
+{
+    /* 空の場合 */
+    if (empty($time)) {
+        return False;
+    }
+
+    /* 日付の妥当性の検査 */
+    $ret = date_parse($time);
+    if ($ret["warning_count"] !== 0 && $ret["error_count"] !== 0) {
+        return False;
+    }
+
+    return True;
+}
+
+/*********************************************************
+ * check_duration()
+ *
+ * 検索期間を検査する
+ *   allowallsearchが0で、searchmaxdurationの期間を超えている
+ *   場合に、エラーとする
+ *
+ * [引数]
+ *       $st                 検索条件の開始日時の配列
+ *       $en                 検索条件の終了日時の配列
+ *
+ * [返り値]
+ *       TRUE                正常
+ *       FALSE               異常
+ **********************************************************/
+function check_duration($start, $end, &$duration = 0)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    if ($web_conf["sylas"]["searchtype"] != "elasticsearch") {
+        return TRUE;
+    }
+
+    /* ここまでで値の正常性は担保されている */
+    $st = date_parse($start);
+    $en = date_parse($end);
+
+    $ustart = strtotime($st['year']. "-". $st['month']. "-". $st['day']. " 00:00:00");
+    $uend = strtotime($en['year']. "-". $en['month']. "-". $en['day']. " 00:00:00");
+    $duration = round(($uend - $ustart) / 86400) + 1;
+
+    if ($web_conf["sylas"]["searchperiodwithindex"] < $duration &&
+        $web_conf["sylas"]["allowallindexsearch"] !== "1") {
+        $err_msg = sprintf($msgarr['50002'][SCREEN_MSG], 
+                  $web_conf["sylas"]["searchperiodwithindex"]);
+        $log_msg = $msgarr['50002'][LOG_MSG];
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+
+/*********************************************************
+ * check_resultline
+ *
+ * 検索結果表示件数の検査
+ *
+ * [引数]
+ *       $post
+ *
+ * [返り値]
+ *       TRUE                正常
+ *       FALSE               異常
+ **********************************************************/
+function check_resultline($post) {
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    if (!isset($post["resultline"])) {
+        $err_msg = $msgarr['41011'][SCREEN_MSG];
+        $log_msg = $msgarr['41011'][LOG_MSG];
+        return FALSE;
+    }
+
+    if (!is_numeric($post["resultline"])) {
+        $err_msg = $msgarr['41012'][SCREEN_MSG];
+        $log_msg = $msgarr['41012'][LOG_MSG];
+        return FALSE;
+    }
+
+    if ($post["resultline"] <= 0) {
+        $err_msg = $msgarr['41013'][SCREEN_MSG];
+        $log_msg = $msgarr['41013'][LOG_MSG];
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*********************************************************
+ * check_easy_search_condition()
+ *
+ * ログ検索の検索条件をチェックする
+ *
+ * [引数]
+ *       $post               入力された値
+ *
+ * [返り値]
+ *       TRUE                正常
+ *       FALSE               異常
+ **********************************************************/
+function check_easy_search_condition($post)
+{
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* ログのチェック */
+    if ($post["loggroup"] == -1) {
+        $err_msg = $msgarr['28014'][SCREEN_MSG];
+        $log_msg = $msgarr['28014'][LOG_MSG];
+        return FALSE;
+    }
+
+    /* プライオリティのチェックは行なわない */
+
+    /* ホスト名のチェック */
+    if (isset($post["hostname"]) && $post["hostname"] != "") {
+        $ret = check_alpha_bars_dot($post["hostname"], ELS_HOSTNAME_MAXLEN,
+                                    -1, 1);
+        if ($ret !== 0) {
+            $err_msg = $msgarr['28029'][SCREEN_MSG];
+            $log_msg = $msgarr['28029'][LOG_MSG];
+            return FALSE;
+        }
+    }
+
+    /* キーワードが入力されているとき、最大文字数をチェック */
+    if (isset($post["keyword"])) {
+        $ret = check_keyword($post["searchtype"], $post["keyword"], 
+                             ELS_KEYWORD_MAXLEN);
+        if ($ret === 3) {
+            $err_msg = $msgarr['28025'][SCREEN_MSG];
+            $log_msg = $msgarr['28025'][LOG_MSG];
+            return FALSE;
+
+        } else if ($ret != 0) {
+            $err_msg = $msgarr['28015'][SCREEN_MSG];
+            $log_msg = $msgarr['28015'][LOG_MSG];
+            return FALSE;
+        }
+    }
+
+    /* 検索期間のチェック */
+    /* 開始日付 */
+    $ret = check_time_format($post["startdate"]);
+    if ($ret === FALSE) {
+        $err_msg = $msgarr['28016'][SCREEN_MSG];
+        $log_msg = $msgarr['28016'][LOG_MSG];
+        return FALSE;
+    }
+    /* 終了日付 */
+    $ret = check_time_format($post["enddate"]);
+    if ($ret === FALSE) {
+        $err_msg = $msgarr['28017'][SCREEN_MSG];
+        $log_msg = $msgarr['28017'][LOG_MSG];
+        return FALSE;
+    }
+
+    /* 開始と終了の前後チェック */
+    $start = strtotime($post["startdate"]);
+    $end   = strtotime($post["enddate"]);
+    if ($start > $end) {
+        $err_msg = $msgarr['28018'][SCREEN_MSG];
+        $log_msg = $msgarr['28018'][LOG_MSG];
+        return FALSE;
+    }
+
+    /* 日付までの期間検査 */
+    $ret = check_duration($post["startdate"], $post["enddate"]);
+    if ($ret === FALSE) {
+        return FALSE;
+    }
+
+    /* 表示件数の検査 */
+    $ret = check_resultline($post);
+    if ($ret === FALSE) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*********************************************************
+ * check_dhcp_search_condition()
+ *
+ * dhcpログ検索の検索条件をチェックする
+ *
+ * [引数]
+ *       $post               入力された値
+ *
+ * [返り値]
+ *       TRUE                正常
+ *       FALSE               異常
+ **********************************************************/
+function check_dhcp_search_condition($post)
+{
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* ログのチェック */
+    if ($post["loggroup"] === "-1") {
+        $err_msg = $msgarr['28014'][SCREEN_MSG];
+        $log_msg = $msgarr['28014'][LOG_MSG];
+        return FALSE;
+    }
+
+    /* IPアドレスが入力されているとき、最大文字数,文字種をチェック */
+    if ($post["ip"] != "") {
+        $ret = check_ipaddress($post["ip"],
+                             DHCP_IPADDRESS_MAXLEN);
+        if ($ret != 0) {
+            /*retの値が1,2（文字数、文字種エラー）のときエラーメッセージ*/
+            $err_msg = $msgarr['28045'][SCREEN_MSG];
+            $log_msg = $msgarr['28045'][LOG_MSG];
+            return FALSE;
+        }
+    }
+
+    /* MACアドレスが入力されているとき、最大文字数,文字種をチェック */
+    if ($post["mac"] != "") {
+        $ret = check_macaddress($post["mac"],
+                             DHCP_MACADDRESS_MAXLEN);
+        if ($ret != 0) {
+            /*retの値が1,2（文字数、文字種エラー）のときエラーメッセージ*/
+            $err_msg = $msgarr['28046'][SCREEN_MSG];
+            $log_msg = $msgarr['28046'][LOG_MSG];
+            return FALSE;
+        }
+    }
+
+    /* 検索期間のチェック */
+    /* 開始日付 */
+    $ret = check_time_format($post["startdate"]);
+    if ($ret === FALSE) {
+        $err_msg = $msgarr['28016'][SCREEN_MSG];
+        $log_msg = $msgarr['28016'][LOG_MSG];
+        return FALSE;
+    }
+    /* 終了日付 */
+    $ret = check_time_format($post["enddate"]);
+    if ($ret === FALSE) {
+        $err_msg = $msgarr['28017'][SCREEN_MSG];
+        $log_msg = $msgarr['28017'][LOG_MSG];
+        return FALSE;
+    }
+
+    /* 開始と終了の前後チェック */
+    $start = strtotime($post["startdate"]);
+    $end   = strtotime($post["enddate"]);
+    if ($start > $end) {
+        $err_msg = $msgarr['28018'][SCREEN_MSG];
+        $log_msg = $msgarr['28018'][LOG_MSG];
+        return FALSE;
+    }
+
+    $ret = check_duration($post["startdate"], $post["enddate"]);
+    if ($ret === FALSE) {
+        return FALSE;
+    }
+
+    $ret = check_resultline($post);
+    if ($ret === FALSE) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*********************************************************
+ * make_dhcp_log_sql()
+ *
+ * ロググループの検索条件を作成する
+ *
+ * [引数]
+ *       $conn              MySQLの接続オブジェクト
+ *       $post              入力された値              
+ *       $sql               SQL文
+ *       $search_tab        検索テーブル
+ *
+ * [返り値]
+ *       0                  正常
+ *       1                  DBエラー
+ **********************************************************/
+function make_dhcp_log_sql($conn, $post, &$sql, &$search_tab)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+    global $mysql_facilitynumbers;
+
+    /*ログタイプdhcpが存在しない場合
+    if ($post["loggroup"] == "-1") {
+        return 1;
+    }
+    */
+    /* MySQLから情報取得するためのSQL作成*/
+    $select_sql = sprintf(ESL_LOGGROUP_SQL, $post["loggroup"]);
+
+    /* MySQLから情報を取得 */
+    $result = MySQL_exec_query($conn, $select_sql);
+    if ($result === FALSE) {
+        return 1;
+    }
+
+    /* MySQLに登録されたログ管理テーブルの情報を配列に格納 */
+    MySQL_get_data($result, $data);
+
+    /* データがないとき、ロググループに検索対象ホストが設定されていない */
+    if (count($data) === 0) {
+        $err_msg = $msgarr['28019'][SCREEN_MSG];
+        $log_msg = $msgarr['28019'][LOG_MSG];
+        return 1;
+    }
+
+    /* 検索対象テーブルを設定 */
+    /* 値がないときはweb.confにかかれたデフォルトを使用 */
+    if ($data[0]["search_tab"] === "") {
+        $search_tab = $web_conf["sylas"]["defaultsearchtable"];
+    } else {
+        $search_tab = $data[0]["search_tab"];
+    }
+
+    /* アプリケーション名を取得 */
+    $app_name      = $data[0]["app_name"];
+    /* ファシリティを文字列から番号に変換
+     * (データベースには番号で登録されている) */
+    /* データベースにはスペース区切りで記述されている */
+    $facilitynames = explode(" ", $data[0]["facility_name"]);
+    foreach ($facilitynames as $facilityname) {
+        /* 不正なファシリティを回避 */
+        if (!isset($mysql_facilitynumbers["$facilityname"])) {
+            $facilityNums[] = BAD_FACILITY;
+        } else {
+            $facilityNums[] = $mysql_facilitynumbers["$facilityname"];
+        }
+    }
+
+    /****************************
+     * SQL文作成開始
+     ****************************/
+
+    foreach ($data as $one_data) {
+        /* 全てのホストが指定されているとき、ホスト条件は付加しない */
+        if ($one_data["host_id"] === "1") {
+            $sql = "";
+            break;
+        }
+        if ($sql === "") {
+            $sql = "FromHost = \"" .
+                mysqli_real_escape_string($conn, $one_data["host_name"]) .
+                  "\"";
+        } else {
+            $sql .= " OR FromHost = \"" .
+                 mysqli_real_escape_string($conn, $one_data["host_name"]) .
+                    "\"";
+        }
+    }
+
+    /* ホスト検索条件が完成したので()でくくる */
+    if ($sql != "") {
+        $sql = "(" . $sql . ")";
+    }
+
+    /* facility条件 */
+    /* 検索対象がないか、全件検索であればスルー */
+    if (isset($facilityNums) && !in_array(99, $facilityNums)) {
+        /* 条件があれば部分一致でORつなぎ */
+        if ($sql != "") {
+            $sql .= " AND ";
+        }
+        /* まず1つ目をつくり、それ以降をループでつくる */
+        $facilNum = array_pop($facilityNums);
+        $sql .= "(Facility = \"$facilNum\"";
+        foreach ($facilityNums as $facilNum) {
+            $sql .= " OR Facility = \"$facilNum\"";
+        }
+        $sql .= ")";
+    }
+
+    /* app_name条件 */
+    if ($app_name != "") {
+        if ($sql != "") {
+            $sql .= " AND ";
+        }
+        $sql .= "SysLogTag LIKE \"".
+                mysqli_real_escape_string($conn, $app_name) .
+                "%\"";
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * make_esl_log_sql()
+ *
+ * ロググループの検索条件を作成する
+ *
+ * [引数]
+ *       $sql               入力された値
+ *
+ * [返り値]
+ *       0                  正常
+ *       1                  異常
+ *       2                  DBエラー
+ **********************************************************/
+function make_esl_log_sql($conn, $post, &$sql, &$search_tab)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+    global $mysql_facilitynumbers;
+
+    /* MySQLから情報取得 */
+    $select_sql = sprintf(ESL_LOGGROUP_SQL, $post["loggroup"]);
+
+    /* MySQLから情報を取得 */
+    $result = MySQL_exec_query($conn, $select_sql);
+    if ($result === FALSE) {
+        return 2;
+    }
+
+    /* MySQLに登録されたログ管理テーブルの情報を配列に格納 */
+    MySQL_get_data($result, $data);
+
+    /* データがないとき、ロググループに検索対象ホストが設定されていない */
+    if (count($data) === 0) {
+        $err_msg = $msgarr['28019'][SCREEN_MSG];
+        $log_msg = $msgarr['28019'][LOG_MSG];
+        return 1;
+    }
+    /* 検索対象テーブルを設定 */
+    /* 値がないときはweb.confにかかれたデフォルトを使用 */
+    if ($data[0]["search_tab"] === "") {
+        $search_tab = $web_conf["sylas"]["defaultsearchtable"];
+    } else {
+        $search_tab = $data[0]["search_tab"];
+    }
+
+    /* アプリケーション名を取得 */
+    $app_name      = $data[0]["app_name"];
+
+    /* ファシリティを文字列から番号に変換
+     * (データベースには番号で登録されている) */
+    /* データベースにはスペース区切りで記述されている */
+    $facilitynames = explode(" ", $data[0]["facility_name"]);
+    foreach ($facilitynames as $facilityname) {
+        /* 不正なファシリティを回避 */
+        if (!isset($mysql_facilitynumbers["$facilityname"])) {
+            $facilityNums[] = BAD_FACILITY;
+        } else {
+            $facilityNums[] = $mysql_facilitynumbers["$facilityname"];
+        }
+    }
+
+
+    /****************************
+     * SQL文作成開始
+     ****************************/
+
+    /* ロググループで設定されているホスト条件 */
+    /* 画面フォームでホストが指定されていない時にチェックする */
+    if (!isset($post["hostname"]) || $post["hostname"] == "") {
+        foreach ($data as $one_data) {
+            /* 全てのホストが指定されているとき、ホスト条件は付加しない */
+            if ($one_data["host_id"] === "1") {
+                $sql = "";
+                break;
+            }
+            if ($sql === "") {
+                $sql = "FromHost = \"" . 
+                     mysqli_real_escape_string($conn, $one_data["host_name"]) .
+                      "\"";
+            } else {
+                $sql .= " OR FromHost = \"" .
+                     mysqli_real_escape_string($conn, $one_data["host_name"]) .
+                        "\"";
+            }
+        }
+    } else {
+        /* ホスト入力欄から指定された条件を処理する */
+        $hostsList = explode(" ", $post["hostname"]);
+        foreach ($hostsList as $targetHost) {
+            /* 入力が無かったり、スペースが2個連続しているとき */
+            if ($targetHost == "") {
+                continue;
+            }
+            /* もう条件がSQL文に存在したらスキップ */
+            if (strpos($sql, $targetHost) !== FALSE) {
+                continue;
+            }
+            /* ホスト検索文を作成 */
+            if ($sql === "") {
+                $sql = "FromHost = \"" . 
+                      mysqli_real_escape_string($conn, $targetHost) . "\"";
+            } else {
+                $sql .= " OR FromHost = \"" .
+                        mysqli_real_escape_string($conn, $targetHost) . "\"";
+            }
+        }
+    }
+    /* ホスト検索条件が完成したので()でくくる */
+    if ($sql != "") {
+        $sql = "(" . $sql . ")";
+    }
+
+    /* facility条件 */
+    /* 検索対象がないか、全件検索であればスルー */
+    if (isset($facilityNums) && !in_array(99, $facilityNums)) {
+        /* 条件があれば部分一致でORつなぎ */
+        if ($sql != "") {
+            $sql .= " AND ";
+        }
+        /* まず1つ目をつくり、それ以降をループでつくる */
+        $facilNum = array_pop($facilityNums);
+        $sql .= "(Facility = \"$facilNum\"";
+        foreach ($facilityNums as $facilNum) {
+            $sql .= " OR Facility = \"$facilNum\"";
+        }
+        $sql .= ")";
+    }
+
+    /* app_name条件 */
+    if ($app_name != "") {
+        if ($sql != "") {
+            $sql .= " AND ";
+        }
+        $sql .= "SysLogTag LIKE \"".
+                mysqli_real_escape_string($conn, $app_name) .
+                "%\"";
+    }
+
+    return 0;
+}
+
+/*********************************************************
+ * make_keyword_sql()
+ *
+ * キーワードの検索条件を作成する
+ *
+ * [引数]
+ *       $sql               入力された値
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_keyword_sql($conn, $post, &$sql)
+{
+    /* 空文字列のときはキーワード検索のSQL文は空 */
+    if ($post["keyword"] == "") {
+        $sql = "";
+        return;
+    }
+
+    /* 正規表現のとき */
+    if (isset($post["searchtype"]) && $post["searchtype"] == 2) {
+        $sql = "Message REGEXP \""
+               . mysqli_real_escape_string($conn, $post["keyword"]) . "\"";
+        return;
+    }
+
+    /* 全角スペースを半角スペースに変換する */
+    $keystr = str_replace("　", " ", $post["keyword"]);
+
+    /* キーワードを半角スペースで分割する */
+    $keyarr = explode(" ", $keystr);
+
+    if (!$keyarr) return;
+
+    // ORのとき
+    if (isset($post["searchtype"]) && $post["searchtype"] == 1) {
+        $prefix = "";
+
+    // ANDのとき
+    } else {
+        $prefix = "+";
+    }
+
+    $sql = "MATCH(Message) AGAINST('";
+    foreach ($keyarr as $keyword) {
+        $sql .= " " . $prefix . mysqli_real_escape_string($conn, $keyword);
+    }
+
+    /* ORのとき他の検索条件に影響を与えないように括弧で囲う */
+    $sql =  "(" . $sql . "' IN BOOLEAN MODE))";
+
+    return;
+
+}
+
+/*********************************************************
+ * make_timerange_sql()
+ *
+ * ログ検索の検索条件をチェックする
+ *
+ * [引数]
+ *       $sql               入力された値
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_timerange_sql($conn, $post, &$sql)
+{
+    /* Unixタイムスタンプを得る */
+    $ustart = strtotime($post["startdate"]);
+    $uend = strtotime($post["enddate"]);
+
+    /* 開始時間を連結した文字列を取得 */
+    $start = date("YmdHis", $ustart);
+    $end = date("YmdHis", $uend);
+
+    /* SQL文を作成する */
+    $startsql = "DeviceReportedTime >= \""
+                . mysqli_real_escape_string($conn, $start) . "\"";
+
+    /* SQL文を作成する */
+    $endsql = "DeviceReportedTime <= \""
+              . mysqli_real_escape_string($conn, $end) . "\"";
+
+    $sql = $startsql . " AND " . $endsql;
+
+    return;
+}
+
+/*********************************************************
+ * make_dhcp_search_sql()
+ *
+ * ログ検索の検索用SQLを作成する
+ *
+ * [引数]
+ *       $conn               MySQLの接続オブジェクト
+ *       $post               入力された値
+ *       $sql                SQL文
+ *
+ * [返り値]
+ *       0                  正常
+ *       1                  異常
+ *       2                  DBエラー
+ **********************************************************/
+function make_dhcp_search_sql($conn, $post, &$sql)
+{
+    /* ロググループ条件部分作成 */
+    $log_sql = "";
+    $ret = make_dhcp_log_sql($conn, $post, $log_sql, $search_table);
+    if ($ret != 0) {
+        return $ret;
+    }
+
+    /* 期間条件部分 */
+    make_timerange_sql($conn, $post, $timerange_sql);
+    if ($timerange_sql != "") {
+        $timerange_sql = " AND $timerange_sql";
+    }
+
+
+    /* ip, mac, interface条件 */
+    $format = "MATCH(Message) AGAINST('";
+
+    /* DHCPv4の取得 */
+    $format .= "(+DHCPACK";
+    $format .= $post["ip"]  ? " +\"on $post[ip]\""  : "";
+    $format .= $post["mac"] ? " +\"to $post[mac]\"" : "";
+    $format .= $post["interface"] ? " +$post[interface]" : "";
+    $format .= ")";
+
+    /* インターフェースがセットされていなければDHCPv6の取得 */
+    if ($post["interface"] == "") {
+        $format .= ' (+"Reply NA:"';
+        $format .= $post["ip"]  ? " +\"address $post[ip]\""  : "";
+        $format .= $post["mac"] ? " +\"duid $post[mac]\"" : "";
+        $format .= ")";
+    }
+
+    $format .= "' in boolean mode)";
+
+    if ($log_sql != "") {
+        $format = "AND ($format)";
+    }
+
+    /* SQL作成 */
+    /* 検索条件があれば */
+    $sql = sprintf(DHCP_SEARCH_SQL,
+                  $search_table,
+                  $log_sql,
+                  $format,
+                  $timerange_sql
+                 );
+    return 0;
+}
+
+/*********************************************************
+ * make_easy_search_sql()
+ *
+ * ログ検索の検索用SQLを作成する
+ *
+ * [引数]
+ *       $sql               入力された値
+ *
+ * [返り値]
+ *       0                  正常
+ *       1                  異常
+ *       2                  DBエラー
+ **********************************************************/
+function make_easy_search_sql($conn, $post, &$sql)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    $search_sql = array();
+    $log_sql = "";
+
+    /* ロググループ条件部分作成 */
+    $ret = make_esl_log_sql($conn, $post, $log_sql, $search_table);
+    if ($ret != 0) {
+        return $ret;
+    }
+    if ($log_sql != "") {
+        array_push($search_sql, $log_sql);
+    }
+
+    /* プライオリティ条件部分 */
+    if ($post["priority"] != -1) {
+        $priority_sql = " Priority= \"" .
+                         mysqli_real_escape_string($conn, $post["priority"]) .
+                        "\"";
+        array_push($search_sql, $priority_sql);
+    }
+
+    /* キーワード部分 */
+    if ($post["keyword"] != "") {
+        make_keyword_sql($conn, $post, $keyword_sql);
+        if ($keyword_sql != "") {
+            $keyword_sql = " $keyword_sql";
+            array_push($search_sql, $keyword_sql);
+        }
+    }
+
+    /* 期間条件部分 */
+    make_timerange_sql($conn, $post, $timerange_sql);
+    if ($timerange_sql != "") {
+        $timerange_sql = " $timerange_sql";
+       array_push($search_sql, $timerange_sql);
+    }
+
+   /* SQL作成 */
+   /* 全件検索になったら */
+   if (count($search_sql) == 0) {
+       $sql = sprintf(EASY_ALLSEARCH_SQL, $search_table);
+       return 0;
+   }
+
+   /* 検索条件があれば */
+   $search_sql_all = implode("AND", $search_sql);
+   $sql = sprintf(EASY_SEARCH_SQL,
+                  $search_table,
+                  $search_sql_all
+                 );
+    return 0;
+
+}
+
+
+/*********************************************************
+ * make_search_hosts()
+ *
+ * 検索対象、非対象リストを作成する
+ *
+ * [引数]
+ *       $all_hosts         すべてのホストを格納した配列
+ *       $search_hosts      検索対象ホストを格納した配列
+ *       $non_search        検索非対称ホスト(参照渡し)
+ *       $search            検索対象ホスト(参照渡し)
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_search_hosts($all_hosts, $search_hosts, &$non_search, &$search)
+{
+    /* すべてのホストの配列をループ */
+    foreach ($all_hosts as $one_host) {
+
+        $host_id = $one_host["host_id"];
+        $host_name = $one_host["host_name"];
+
+        $tmp_n[$host_id] = $host_name;
+
+    }
+
+    /* 検索対象ホスト配列作成 */
+    foreach ($search_hosts as $one_s_host) {
+        $s_host = $one_s_host["host_id"];
+
+        if (isset($tmp_n[$s_host]) === TRUE) {
+            $search[$s_host] = $tmp_n[$s_host];
+        }
+    }
+
+    /* 検索非対称ホストリスト作成 */
+    $non_search = array_diff($tmp_n, $search);
+
+    return;
+}
+
+/*********************************************************
+ * make_hosts_option()
+ *
+ * ホストのオプションを作成する
+ *
+ * [引数]
+ *       $hosts             ホストを格納した配列
+ *       $option            セレクトボックスのオプション
+ *                          (参照渡し)
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_hosts_option($hosts, &$option)
+{
+    if (!isset($hosts)) {
+        return;
+    }
+    $option = "";
+    foreach ($hosts as $id => $name) {
+        $host_name = escape_html($name);
+        $option .= <<<HERE
+<option value="$id,$host_name">$host_name</option>
+
+HERE;
+    }
+}
+
+/*********************************************************
+ * make_id_hidden()
+ *
+ * 検索対象ホストのhiddenを作成する
+ *
+ * [引数]
+ *       $hosts             ホストを格納した配列
+ *       $option            セレクトボックスのオプション
+ *                          (参照渡し)
+ *       $hid_name          hiddenのname
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function make_id_hidden($hosts, &$hidden, $hid_name)
+{
+    if (!isset($hosts)) {
+        return;
+    }
+    $hidden = "";
+    $hid_name = "$hid_name" . "[]";
+    foreach ($hosts as $id => $name) {
+        $host_name = escape_html($name);
+        $hidden .= <<<HERE
+<input type="hidden" name="$hid_name" value="$id,$host_name">
+
+HERE;
+    }
+}
+
+/*********************************************************
+ * modify_search_host()
+ *
+ * 検索対象ホストを登録する
+ *
+ * [引数]
+ *       $hosts             ホストを格納した配列
+ *       $option            セレクトボックスのオプション
+ *                          (参照渡し)
+ *
+ * [返り値]
+ *       なし
+ **********************************************************/
+function modify_search_host($hosts, $group_id)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* MySQL接続 */
+    $conn = MySQL_connect_server();
+    if ($conn === FALSE) {
+        return FALSE;
+    }
+
+    /* トランザクション開始 */
+    $result = MySQL_exec_query($conn, BEGIN);
+    if ($result === FALSE) {
+        mysqli_close($conn);
+        return FALSE;
+    }
+
+    $g_id = mysqli_real_escape_string($conn, $group_id);
+
+    /* 既存データ取得 */
+    $check_sh_sql = sprintf(CHECK_SH_SQL, $g_id);
+    $result = MySQL_exec_query($conn, $check_sh_sql);
+    if ($result === FALSE) {
+        mysqli_close($conn);
+        return FALSE;
+    }
+
+    /* 既存設定が存在する場合は、一度すべて削除 */
+    MySQL_get_data($result, $data);
+    if (count($data) != 0) {
+        $del_sh_sql = sprintf(DELETE_SH_SQL, $g_id);
+        $result = MySQL_exec_query($conn, $del_sh_sql);
+        if ($result === FALSE) {
+
+            /* ロールバック */
+            MySQL_exec_query($conn, ROLLBACK);
+            mysqli_close($conn);
+            return FALSE;
+        }
+    }
+
+    /* 画面で指定された検索対象ホストをMySQLに追加 */
+    foreach ($hosts as $host_id) {
+        list($host_id, ) = explode(',', $host_id);
+        $h_id = mysqli_real_escape_string($conn, $host_id);
+        $in_sh_sql = sprintf(INSERT_SH_SQL, $g_id, $h_id);
+        $result = MySQL_exec_query($conn, $in_sh_sql);
+        if ($result === FALSE) {
+
+            /* ロールバック */
+            MySQL_exec_query($conn, ROLLBACK);
+            mysqli_close($conn);
+            return FALSE;
+        }
+    }
+
+    /* トランザクション反映 */
+    $result = MySQL_exec_query($conn, COMMIT);
+    if ($result === FALSE) {
+        mysqli_close($conn);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/***********************************************************
+ * post_location()
+ *
+ * ロケーションを行う
+ *
+ * [引数]
+ *      $url
+ *      $msg
+ *      $post        ポストしたい値(キーがname, 値がvalue)
+ *
+ * [返り値]
+ *      なし
+ ************************************************************/
+function post_location($url, $msg = null, $post = array())
+{
+    global $sesskey;
+
+    /* セッション */
+    $hidden = "<input type=\"hidden\" name=\"sk\" value=\"" .
+               $sesskey . "\">";
+
+    /* メッセージ */
+    $message = "";
+    if (!is_null($msg)) {
+        $message = "<input type=\"hidden\" " .
+                              "name=\"msg\" value=\"$msg\">";
+    }
+
+    $value = "";
+    if (count($post) != 0) {
+        foreach ($post as $name => $value) {
+            $e_name = escape_html($name);
+            $e_val  = escape_html($value);
+            $value .= "<input type=\"hidden\" " .
+                      "name=\"$e_name\" value=\"$e_val\">";
+        }
+    }
+
+    /* HTML作成 */
+    display_header();
+    print <<<EOD
+<script type="text/javascript">
+<!--
+function msgConfirm(msg) {
+        return(window.confirm(msg));
+}
+
+function dgpSubmit(url) {
+    document.common.action = url;
+    document.common.submit();
+}
+// -->
+</script>
+<body onload="dgpSubmit('$url')">
+処理中...
+<form method="post" name="common">
+    $hidden
+    $message
+    $value
+</form>
+</body>
+</html>
+EOD;
+    exit;
+
+}
+/*********************************************************
+ * check_ip()
+ *
+ * 送信元IPアドレスの入力値チェックを行う。
+ *
+ * [引数]
+ *        $ip         検査するIPアドレス
+ *
+ * [返り値]
+ *       TRUE             正常
+ *       FALSE            エラー
+ **********************************************************/
+
+function check_ip($ip)
+{
+    /* IPの形式チェック */
+    if ($ip != "") {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === FALSE) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+/*********************************************************
+ * check_rule()
+ *
+ * ルール追加・編集の入力値チェックを行う。
+ *
+ * [引数]
+ *       $post            入力された値
+ *
+ * [返り値]
+ *       TRUE             正常
+ *       FALSE            エラー
+ **********************************************************/
+
+function check_rule($post)
+{
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* 送信元IPアドレスが入力値エラーの時 */
+    if (check_ip($post["ipaddress"]) === FALSE) {
+        /* エラーメッセージをセット */
+        $err_msg = sprintf($msgarr['28030'][SCREEN_MSG], IP_DISP);
+        $log_msg = sprintf($msgarr['28030'][LOG_MSG], IP_LOG);
+        return FALSE;
+    }
+    /* キーワードが入力値エラーの時 */
+    if (check_rule_value($post["keyword"], MINKEYWORD, MAXKEYWORD) === FALSE){
+        /* エラーメッセージをセット */
+        $err_msg = sprintf($msgarr['28030'][SCREEN_MSG], KEYWORD_DISP);
+        $log_msg = sprintf($msgarr['28030'][LOG_MSG], KEYWORD_LOG);
+        return FALSE;
+    }
+    /* メール宛先の入力値エラーの時 */
+    if (check_mail($post["mailto"]) === FALSE) {
+        /* エラーメッセージをセット */
+        $err_msg = sprintf($msgarr['28030'][SCREEN_MSG], MAILTO_DISP);
+        $log_msg = sprintf($msgarr['28030'][LOG_MSG], MAILTO_LOG);
+        return FALSE;
+    }
+    /* メール件名が入力値エラーの時 */
+    if (check_rule_value($post["subject"], MINSUBJECT, MAXSUBJECT) === FALSE) {
+        /* エラーメッセージをセット */
+        $err_msg = sprintf($msgarr['28030'][SCREEN_MSG], SUBJECT_DISP);
+        $log_msg = sprintf($msgarr['28030'][LOG_MSG], SUBJECT_LOG);
+        return FALSE;
+    }
+    /* メール本文が入力値エラーの時 */
+    /* 改行を\nに統一 */
+    $body = str_replace(array("\r\n", "\r", "\n"), "\n", $post["body"]);
+    if (check_rule_value($body, MINBODY, MAXBODY, FALSE) === FALSE) {
+        /* エラーメッセージをセット */
+        $err_msg = sprintf($msgarr['28030'][SCREEN_MSG], BODY_DISP);
+        $log_msg = sprintf($msgarr['28030'][LOG_MSG], BODY_LOG);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*********************************************************
+ * check_rule_value()
+ *
+ * ルールの入力値チェック 
+ *
+ * [引数]
+ *      $inputvalue  入力された値 
+ *      $minlen      最小入力文字数
+ *      $maxlen      最大入力文字数
+ *      $body        本文のチェックか判断する 
+ * [返り値]
+ *      TRUE         正常
+ *      FALSE        異常
+ **********************************************************/
+
+function check_rule_value($inputvalue, $minlen, $maxlen, $body = TRUE)
+{
+    /* 文字数チェック */
+    $letters = strlen($inputvalue);
+    if ($letters < $minlen || $letters > $maxlen) {
+        return FALSE;
+    }
+
+    /* 半角英大小文字、数字、特定記号のみ許可 */
+    $num = "0123456789";
+    $sl = "abcdefghijklmnopqrstuvwxyz";
+    $ll = strtoupper($sl);
+    if($body === TRUE) {
+        $sym = "! \"#$%&'()=-~^|@`[{;+:*]},<.>\/?_";
+    } else {
+        $sym = "! \"#$%&'()=-~^|@`[{;+:*]},<.>\/?_\n";
+    }
+    $allow_letter = $num . $sl . $ll . $sym;
+    if (strspn($inputvalue, $allow_letter) != $letters) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*********************************************************
+ * make_select()
+ *
+ * セレクトボックス作成関数
+ *
+ * [引数]
+ *      $array            オプションに使用する値の配列
+ *      $option           セレクトボックスのオプション
+ *                        (参照渡し)
+ *      $values           入力された値
+ *
+ * [返り値]
+ *      なし
+ ********************************************************/
+function make_select($array, &$option, $values = "")
+{
+
+    /* arrayの配列をループ */
+    foreach ($array as $name => $val) {
+        if ($val == $values) {
+            $option .= <<<HERE
+<option value="$val" selected>$name</option>
+HERE;
+            continue;
+        }
+        $option .= <<<HERE
+<option value="$val">$name</option>
+HERE;
+    }
+    return;
+}
+
+/*********************************************************
+ * in_contents()
+*
+ * rsyslogファイルに書き込む内容作成関数
+ *
+ * [引数]
+ *      $post           入力された値
+ *      $nextnum        rsyslogファイルの番号
+ *
+ * [返り値]
+ *      $contents       ファイルに書き込む内容
+ ********************************************************/
+function in_contents($post, $nextnum)
+{
+
+    $ip       = $post["ipaddress"];
+    $facility = $post["facility"];
+    $degree   = $post["degree"];
+    $to       = $post["mailto"];
+    $keyword  = $post["keyword"];
+    $body     = str_replace(array("\r\n", "\r", "\n"), "\\r\\n", $post["body"]);
+    $subject  = $post["subject"];
+
+    $contents = <<<HERE
+\$IncludeConfig /etc/rsyslog.sylas.d/base
+
+#### Recipient ####
+\$ActionMailTo $to
+
+HERE;
+    /* 件名が指定されていれば */
+    if ($subject != "") {
+        $subject = str_replace("\"", "\\\"", $subject);
+        $subject = str_replace("%", "\%", $subject);
+        $contents .= <<<HERE
+
+#### Subject ####
+\$template mail_subject$nextnum,"$subject"
+\$ActionMailSubject mail_subject$nextnum
+
+HERE;
+    }
+
+    /* 本文が指定されていれば */
+    if ($body != "") {
+        $body = str_replace("\"", "\\\"", $body);
+        $body = str_replace("%", "\%", $body);
+        $contents .= <<<HERE
+
+#### Body ####
+\$template mail_body$nextnum,"$body"
+
+HERE;
+    }
+
+    $contents .= <<<HERE
+
+#### Rule ####
+if \
+
+HERE;
+    /* IPが指定されていれば */
+    if ($ip != "") {
+        $contents .= IP_SET . " == '$ip' and \\ \n";
+    }
+    /* ファシリティがすべてでなければ */
+    if ($facility != "-1") {
+        $contents .= FACILITY_SET . " == $facility and \\ \n";
+    }
+    /* 重要度がすべてでなければ */
+    if ($degree != "-1") {
+        $contents .= DEGREE_SET . " <= $degree and \\ \n";
+    }
+    $esc_keyword = str_replace("\\", "\\\\", $keyword);
+    $esc_keyword = str_replace("'", "\\'", $esc_keyword);
+
+    $contents .= KEYWORD_SET . "'$esc_keyword' \\ \n";
+    /* 本文が指定されていなければ */
+    if ($body == "") {
+        $contents .= "then :ommail:;default_mail_body\n";
+    } else {
+        $contents .= "then :ommail:;mail_body$nextnum\n";
+    }
+    return $contents;
+}
+
+/*********************************************************
+ * cut_keyword()
+ *
+ * 出力用のキーワードを形成する関数
+ *
+ * [引数]
+ *      $in_keyword     入力されたキーワード
+ *
+ * [返り値]
+ *      $disp_key       出力用のキーワード(40文字以上)
+ *      $in_keyword     出力用のキーワード(40文字未満)
+ ********************************************************/
+
+function cut_keyword($in_keyword)
+{
+
+    /* キーワードが40文字以上か */
+    $strkey = strlen($in_keyword);
+    if ($strkey > DISP_KEY) {
+        $cutkey = substr($in_keyword, 0, DISP_KEY);
+        $disp_key = "$cutkey" . "...";
+        return $disp_key;
+    }
+    return $in_keyword;
+}
+
+/*********************************************************
+ * dgp_location_hidden() 
+ *
+ * 画面遷移する際に値も渡す 
+ *
+ * [引数]
+ *       $url                遷移先
+ *       $hiarray            渡したい値の配列
+ *
+ * [返り値]
+ *       TRUE                正常
+ *       FALSE               異常
+ **********************************************************/
+function dgp_location_hidden($url, $hiarray = null)
+{
+    global $sesskey;
+
+    /* セッション */
+    $hidden = "<input type=\"hidden\" name=\"sk\" value=\"" .
+               $sesskey . "\">";
+
+    if (is_array($hiarray)) {
+        foreach ($hiarray as $key => $value) {
+            $hidden .= "\n" . "<input type=\"hidden\" name=\"$key\" " .
+                              "value=\"$value\">";
+        }
+    }
+
+    /* HTML作成 */
+    display_header();
+    print <<<EOD
+<script type="text/javascript">
+<!--
+
+function dgpSubmit(url) {
+    document.common.action = url;
+    document.common.submit();
+}
+// -->
+</script>
+<body onload="dgpSubmit('$url')">
+処理中...
+<form method="post" name="common">
+    $hidden
+</form>
+</body>
+</html>
+EOD;
+    exit;
+
+}
+
+/*********************************************************
+ * get_rsys_file
+ *
+ * 設定ファイルを取得する 
+ *
+ * [引数]
+ *       $dir               設定ファイルのあるディレクトリ 
+ *
+ * [返り値]
+ *       TRUE                正常
+ *       FALSE               異常
+ **********************************************************/
+function get_rsys_file($dir, &$rsysarray)
+{
+    /* ディレクトリハンドルを取得する */
+    $rsysdir = opendir($dir);
+    if ($rsysdir === FALSE) {
+        return FALSE;
+    }
+    $rsysarray = array();
+    $rsysnum = array();
+    /* readdirでファイル名を取得する */
+    while (false !== ($rsysfile = readdir($rsysdir))) {
+        /* .confを取り出す */
+        $ret = preg_match("/^[0-9]*.conf$/", $rsysfile, $confarray);
+        if ($ret === FALSE) {
+            $err_msg = sprintf($msgarr['28038'][SCREEN_MSG], $dir);
+            $log_msg = sprintf($msgarr['28038'][LOG_MSG], $dir);
+            return FALSE;
+        }
+        /* 配列に入れ直す */
+        foreach($confarray as $rsysfile) {
+            $rsysfile = substr($rsysfile,0,-5);
+            array_push($rsysnum, $rsysfile);
+        }
+    }
+    closedir($rsysdir);
+    sort($rsysnum);
+    foreach($rsysnum as $filenum) {
+        $file = "$filenum.conf";
+        array_push($rsysarray, $file);
+    }
+    return TRUE;
+}
+
+/*********************************************************
+ * get_array_file
+ *
+ * ファイルの中身を配列に入れる 
+ *
+ * [引数]
+ *       $arrayfile          設定ファイルの配列
+ *       $dir                設定ファイルのディレクトリ
+ *       $flag               エラーメッセージ用のフラグ
+ *
+ * [返り値]
+ *       $filearray          ファイルの中身が入った配列
+ **********************************************************/
+function get_array_file($arrayfile, $dir, &$flag)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* ファイル関数でファイルの中身を配列に入れる */
+    $filearray = array();
+    $i = 0;
+    foreach($arrayfile as $file) {
+        $readfile = $dir . $file;
+        /* ファイルの中身を取得する */
+        $fh = file($readfile);
+        if ($fh === FALSE) {
+            /* エラーメッセージがセットされていたら */
+            if (isset($err_msg) && $err_msg != "") {
+                $err_msg .= "<br>" . sprintf($msgarr['28042'][SCREEN_MSG], $readfile);
+                $log_msg .= sprintf($msgarr['28042'][LOG_MSG], $readfile);
+            } else {
+                $err_msg = sprintf($msgarr['28042'][SCREEN_MSG], $readfile);
+                $log_msg = sprintf($msgarr['28042'][LOG_MSG], $readfile);
+            }
+            $flag = 1;
+        } else {
+            /* 取得した中身を一行ずつ読む */
+            foreach ($fh as $line_num => $line) {
+                $line = rtrim($line);
+                /* メール宛先行を取り出す */
+                $mailto = strstr($line, "\$ActionMailTo");
+                if ($mailto != FALSE) {
+                    $exp = explode(" ", $mailto, 2);
+                    $filearray[$i][$exp[0]] = $exp[1];
+                }
+                /* メール件名行を取り出す */
+                $mailsubject = strstr($line, SUBJECT_SET);
+                if ($mailsubject != FALSE) {
+                    $exp = explode(",", $mailsubject, 2);
+                    $first = strpos($exp[1], "\"");
+                    $last = strrpos($exp[1], "\"");
+                    $subject = substr($exp[1], $first + 1, $last - $first -1);
+                    $filearray[$i][$exp[0]] = $subject;
+                }
+                /* メール本文行を取り出す */
+                $mailbody = strstr($line, BODY_SET);
+                if ($mailbody != FALSE) {
+                    $exp = explode(",", $mailbody, 2);
+                    $first = strpos($exp[1], "\"");
+                    $last = strrpos($exp[1], "\"");
+                    $body = substr($exp[1], $first + 1, $last - $first -1);
+                    $filearray[$i][$exp[0]] = $body;
+                }
+                /* 送信元IPアドレス行を取り出す */
+                $fromip = strstr($line, IP_SET);
+                if ($fromip != FALSE) {
+                    $fromip = str_replace("'", "", $fromip);
+                    $exp = explode(" ", $fromip);
+                    $filearray[$i][$exp[0]] = $exp[2];
+                }
+                /* ファシリティ行を取り出す */
+                $facility = strstr($line, FACILITY_SET);
+                if ($facility != FALSE) {
+                    $exp = explode(" ", $facility);
+                    $filearray[$i][$exp[0]] = $exp[2];
+                }
+                /* 重要度行を取り出す */
+                $syslogseverity = strstr($line, DEGREE_SET);
+                if ($syslogseverity != FALSE) {
+                    $exp = explode(" ", $syslogseverity);
+                    $filearray[$i][$exp[0]] = $exp[2];
+                }
+                /* キーワード行を取り出す */
+                $keyword = strstr($line, KEYWORD_SET);
+                if ($keyword != FALSE) {
+                    /* 'で囲われた部分を取り出す */
+                    $first = strpos($keyword, "'");
+                    $last = strrpos($keyword, "'");
+                    $key = substr($keyword, $first + 1, $last - $first -1);
+                    $filearray[$i][KEYWORD_SET] = $key;
+                }
+            }
+            $filearray[$i]["file"] = $file;
+        }
+        /*次のファイルへ行く*/
+        $i ++;
+    }
+    return $filearray;
+}
+
+/*********************************************************
+ * get_page
+ *
+ * 前ページ・次ページの取得
+ *
+ * [引数]
+ *       $ldap_result       LDAPの検索結果
+ *       $page              ページ
+ *       $tag               タグ
+ * [返り値]
+ *       $all_page          ページ数
+ **********************************************************/
+function get_page($data, &$page, &$tag)
+{
+    global $web_conf;
+
+    $sum = count($data);
+
+    /* 初期表示(0ページ目表示)の場合、特に何もしない */
+    if ($page === 0) {
+        return;
+    }
+    /* ===== 検索後 ===== */
+
+    /* 全ページ数 */
+    $all_page = (int) ceil(($sum / $_POST["resultline"]));
+    if ($all_page == 0) {
+        $all_page = 1;
+    }
+
+    /* 全ページ以上の数字が渡ってきたら最後のページを表示 */
+    if ($all_page <= $page) {
+        $page = $all_page;
+    }
+    /* 最初のページでなければ前ページを表示 */
+    if ($page > 1) {
+        $tmp = $page - 1;
+        $tag["<<PRE>>"] = "<a href=\"#\" onClick=\"allSubmit('index.php', '$tmp')\">前ページ</a>";
+    }
+
+    /* 最後のページでなければ次ページを表示 */
+    if ($page != $all_page) {
+        $tmp = $page + 1;
+        $tag["<<NEXT>>"] = "<a href=\"#\" onClick=\"allSubmit('index.php', '$tmp')\">次ページ</a>";
+    }
+    /* ページ番号を置き換えタグに入れる */
+    $tag["<<PAGE_NUM>>"] = $page;
+
+    return $all_page;
+}
+
+/*********************************************************
+ * check_elasticsearchserver
+ *
+ * 設定ファイルの"elasticsearchservers"の形式チェック
+ *
+ * [引数]
+ *       $elasticsearchserver elasticsearchのサーバIP
+ * [返り値]
+ *       TRUE                 正常
+ *       FALSE                異常
+ **********************************************************/
+function check_elasticsearchserver($elasticsearchserver)
+{
+    global $elasticip;
+
+    /* 設定内容がない場合はエラー */
+    if (strlen($elasticsearchserver) === 0) {
+        return FALSE;
+    }
+        
+    /* 設定内容を "," で切る */
+    $elasticlist = explode(",", $elasticsearchserver);
+
+    /* IPアドレスとポートを ":" で切る */
+    foreach ($elasticlist as $value) {
+        $ip = explode(":", $value, 2);
+        
+        /* IPアドレスがない場合エラー */
+        if (empty($ip[0]) === TRUE) {
+            return FALSE;
+        }
+
+        /* ポートがない場合エラー */
+        if (empty($ip[1]) === TRUE) {
+            return FALSE;
+        }
+
+        /* 前後の空白削除 */
+        $ip[0] = trim($ip[0]);
+        $ip[1] = trim($ip[1]);
+
+        /* ポート番号が数字以外はエラー */
+        if (is_integer_number($ip[1]) === FALSE) {
+            return FALSE;
+        }
+
+        /* 連想配列に格納 */
+        $elasticip["$ip[0]"] = $ip[1];
+    }
+    return TRUE;
+}
+
+/*********************************************************
+ * check_searchtype
+ *
+ * 設定ファイルの"searchtype"の形式チェック
+ *
+ * [引数]
+ *       $searchtype 検索タイプ
+ * [返り値]
+ *       TRUE                 正常
+ *       FALSE                異常
+ **********************************************************/
+function check_searchtype($searchtype)
+{
+
+    /* 設定内容がない場合はエラー */
+    if ($searchtype !== MYSQL && $searchtype !== ELASTICSEARCH) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*********************************************************
+ * check_csvformat
+ *
+ * 設定ファイルの"csvformat"の形式チェック
+ *
+ * [引数]
+ *       $csvformat
+ * [返り値]
+ *       TRUE                 正常
+ *       FALSE                異常
+ **********************************************************/
+function check_csvformat($csvformat)
+{
+    $checker = array("host", "date", "msg");
+
+    /* 空の場合 */
+    if (empty($csvformat)) {
+        return False;
+    }
+
+    /* CSV形式の異常 */
+    $list = explode(",", $csvformat);
+
+    if (count($list) !== 3) {
+        return False;
+    }
+
+    foreach ($checker as $check) {
+        $ret = array_keys($list, $check);
+        if (count($ret) !== 1) {
+            return False;
+        }
+    }
+
+    return TRUE;
+}
+
+/*********************************************************
+ * get_loggroup()
+ *
+ * 指定されたロググループを検索し、結果を配列に格納
+ *
+ * [引数]
+ *       $corn              MYSQLハンドラー
+ *       $loggroup          検索時選択されたロググループ名
+ *       $data              MYSQLから検索したロググループ結果
+ *
+ * [返り値]
+ *       0                  正常
+ *       1                  異常
+ *       2                  DBエラー
+ **********************************************************/
+function get_loggroup($conn, $loggroup, &$data)
+{
+    global $web_conf;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* MySQLから情報取得 */
+    $select_sql = sprintf(ESL_LOGGROUP_SQL, $loggroup);
+
+    /* MySQLから情報を取得 */
+    $result = MySQL_exec_query($conn, $select_sql);
+    if ($result === FALSE) {
+        return 2;
+    }
+
+    /* MySQLに登録されたログ管理テーブルの情報を配列に格納 */
+    MySQL_get_data($result, $data);
+
+    /* データがないとき、ロググループに検索対象ホストが設定されていない */
+    if (count($data) === 0) {
+        $err_msg = $msgarr['28019'][SCREEN_MSG];
+        $log_msg = $msgarr['28019'][LOG_MSG];
+        return 1;
+    }
+
+    return 0;
+
+}
+/*********************************************************
+ * get_elasticdata()
+ *
+ * elasticsearchから検索した結果を配列に格納する
+ *
+ * [引数]
+ *       $groupdata         MYSQLから検索したロググループ結果
+ *       $post              web画面に入力した検索の値
+ *       $gettype           検索画面[簡易(default)・DHCP・mail]
+ *
+ * [返り値]
+ *       $output            検索結果(検索できなかった場合NULL)
+ **********************************************************/
+function get_elasticdata($groupdata, $post, $gettype = "easy")
+{
+    global $web_conf;
+    global $elasticip;
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    /* 初期化 */
+    $elastic_query = "";
+    $elastic_json = "";
+    $oupput = "";
+    $start = "";
+    $end = "";
+    $duration = 0;
+    $indices = array();
+    $index = "";
+
+    /* 検索開始日と終了日の差分(日数:$duration)を取得 */
+    check_duration($post["startdate"], $post["enddate"], $duration);
+
+    /* 開始日をUnixタイムに変換 */
+    $usdate = strtotime($post["startdate"]);
+
+    /* 期間が設定範囲ならindexを整形 */
+    if ($duration <= $web_conf["sylas"]["searchperiodwithindex"]) {
+        for ($i = 0; $i < $duration; $i++) {
+            /* ESのインデックスを整形 */
+            $indices[] = "syslog-". date("Y-m-d", strtotime("+". $i. " day", $usdate)). "*";
+        }
+        $index = "/". implode(",", $indices);
+    }
+
+
+    /* elasticsearch用のjsonを作成 */
+    /* 簡易検索画面 */
+    if ($gettype === "easy") {
+        $elastic_query = make_elasticjson($groupdata, $post);
+    /* DHCP検索画面 */
+    } else if ($gettype === "dhcp") {
+        $elastic_query = make_elasticjson_dhcp($groupdata, $post);
+    /* MAIL検索画面 */
+    } else if ($gettype === "mail") {
+        $elastic_query = make_elasticjson_mail($groupdata, $post);
+    }
+
+    /* web_confに設定のelasticserverに対して検索 */
+    foreach ($elasticip as $ip => $port) {
+
+        /* URL部分作成 */
+        $url = "http://". $ip. ":". $port. $index. "/_search?pretty&size=".
+                                                $web_conf["sylas"]["maxsearchcount"];
+
+        /* cURL */
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $elastic_query);
+
+        /* elasticsearch実行 */
+        $output = curl_exec($ch);
+        curl_close($ch);
+
+        /* 検索できた場合、ループを抜ける */
+        if ($output !== NULL && $output !== false) {
+            break;
+        }
+    }
+
+
+    return $output;
+
+}
+
+/*********************************************************
+ * extract_values()
+ *
+ * elasticsearchから取得したログデータから必要なデータを抽出
+ *
+ * [引数]
+ *       $xmlarr          elasticsearchから取得したログデータ
+ *
+ * [返り値]
+ *       $data            表示用データ
+ **********************************************************/
+function extract_values($xmlarr)
+{
+
+    global $msgarr;
+    global $err_msg;
+    global $log_msg;
+
+    $data = array();
+    $i = 0;
+
+    /* 返り値が400(int型)のとき、エラー */
+    if (isset($xmlarr->status) && $xmlarr->status === 400) {
+        $err_msg = $msgarr['50001'][SCREEN_MSG];
+        $log_msg = $msgarr['50001'][LOG_MSG];
+        return FALSE;
+    };
+
+    /* 置換用日時のパターン */
+    $patterns = "/([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(.[0-9]{3})/";
+    $replacements = "$1/$2/$3 $4:$5:$6";
+    
+    foreach ($xmlarr->hits->hits as $key => $value) {
+        $data[$i]["Message"] = $value->_source->message;
+        $data[$i]["FromHost"] = $value->_source->host;
+        $resultdate = $value->_source->date;
+        $resultdate = preg_replace($patterns, $replacements, $resultdate);
+        $data[$i]["DeviceReportedTime"] = $resultdate;
+        $i++;
+    }
+    return $data;
+
+}
+
+/*********************************************************
+ * make_timerange_elastic()
+ *
+ * 入力された時間をelasticsearch用のログ形式に変更
+ *
+ * [引数]
+ *       $post             入力された値
+ *
+ * [返り値]
+ *       $search_time["start"]     検索開始時間
+ *       $search_time["end"]       検索終了時間
+ **********************************************************/
+function make_timerange_elastic($post)
+{
+    /* Unixタイムスタンプを得る */
+    $ustart = strtotime($post["startdate"]);
+    $uend = strtotime($post["enddate"]);
+
+    /* ES検索用フォーマットに変換 */
+    $start = date("Y-m-d\TH:i:s", $ustart);
+    $end = date("Y-m-d\TH:i:s", $uend);
+
+    /* 返却 */
+    $search_time["start"] = $start;
+    $search_time["end"] = $end;
+
+    return $search_time;
+}
+
+
+
+
+/*********************************************************
+ * make_elasticjson()
+ *
+ * elasticsearchから検索するためのjson文(URL部分を除く)を作成する
+ *
+ * [引数]
+ *       $groupdata          MYSQLから検索したロググループ結果
+ *       $post               入力された値
+ *
+ * [返り値]
+ *       $json                elasticsearch用json文(URL部分なし)
+ **********************************************************/
+function make_elasticjson($groupdata, $post)
+{
+    /*****************************************************
+    * 初期化
+    *****************************************************/
+    $json = "";
+    $jsonArray = array("query"=>
+                   array("bool"=>
+                     array("must"=>array())
+                   )
+                 );
+
+    /* 
+     *$groupdataはhost_nameで分割された配列になっている
+     * 逆に言えばhost_name以外はすべて同じ情報
+     * そのため、値の判別・取得用に先頭だけ切り出しておく
+     */
+    $ghead = $groupdata[0];
+
+    /*****************************************************
+    * Syslog ファシリティ
+    *****************************************************/
+    /* ファシリティが指定されていた場合のみ条件を作成 */
+    if ($ghead["facility_name"] !== ".ALL") {
+        $facility = array("match" => 
+                      array("facility" => $ghead["facility_name"])
+                    );
+
+        $jsonArray["query"]["bool"]["must"][] = $facility;
+    }
+
+    /*****************************************************
+    * Syslog タグ(アプリケーション名)
+    *****************************************************/
+    if ($ghead["app_name"] !== "") {
+        $app = array("wildcard" => 
+                 array("tag" => $ghead["app_name"]. "*")
+               );
+        $jsonArray["query"]["bool"]["must"][] = $app;
+    }
+
+    /*****************************************************
+    * Syslog プライオリティ
+    *****************************************************/
+    if ($post["priority"] !== "-1") {
+        $priority = array("match" => 
+                 array("priority" => $post["priority"])
+               );
+        $jsonArray["query"]["bool"]["must"][] = $priority;
+    }
+
+    /*****************************************************
+    * ホスト名
+    *****************************************************/
+    $ghosts = array();
+    $phosts = array();
+    $hosts = array();
+    $allflag = false;
+
+    /* $groupdataのホスト名を配列に整形 */
+    if ($ghead["host_name"] !== "" && $ghead["host_name"] !== NULL) {
+        foreach ($groupdata as $tmpgroup) {
+            /* host_idが1(すべてのホスト)は含めない*/
+            if ($tmpgroup["host_id"] == 1) {
+                $allflag = true;
+                continue;
+            }
+
+            $ghosts[] = $tmpgroup["host_name"];
+        }
+    }
+
+
+    /* POSTのホスト名を配列に整形 */
+    if (isset($post["hostname"])) {
+        if ($post["hostname"] !== "" && $post["hostname"] !== NULL) {
+            $phosts = explode(" ", $post["hostname"]);
+        }
+    }
+
+    /* すべてのホストがグループに登録されていない場合、絞り込み */
+    if ($allflag === false) {
+        /* グループのホストからポストされたホストを絞り込む */
+        foreach ($phosts as $ph) {
+            foreach ($ghosts as $gh) {
+                if ($gh === $ph) {
+                    $hosts[] = $ph;
+                }
+            }
+        }
+
+        if (count($hosts) == 0 && count($phosts) != 0) {
+            $hosts[0] = "";
+        }
+
+    /* すべてのホストがグループに登録されていれば、POSTされたホスト
+       を絞り込み条件とする */
+    } else {
+        $hosts = $phosts;
+    }
+
+    if (count($hosts) == 0) {
+        $hosts = $ghosts;
+    }
+
+
+    if (count($hosts) !== 0) {
+        /* マージされたデータをユニークする */
+        $hosts = array_unique($hosts);
+
+        /* ホスト名達をスペース区切りの文字列とする */
+        $host_str = implode(" ", $hosts);
+
+        $hostJson = array("query_string"=>
+                         array("default_field"=>"host.keyword",
+                               "default_operator"=>"or",
+                               "query"=> $host_str)
+                       );
+
+        $jsonArray["query"]["bool"]["must"][] = $hostJson;
+    }
+
+    /*****************************************************
+    * キーワード
+    *****************************************************/
+    if ($post["keyword"] !== "") {
+        $escword1 = str_replace(":", "\:", $post["keyword"]);
+        $escword2 = str_replace("[", "\[", $escword1);
+        $escword2 = str_replace("]", "\]", $escword2);
+        $escword2 = str_replace("+", "\+", $escword2);
+
+        /* ANDの場合 */
+        $keyword = array("query_string"=>
+                     array("default_field"=>"message",
+                           "default_operator"=>"and",
+                           "query"=> $escword2)
+                   );
+    
+        /* ORの場合 */
+        if ($post["searchtype"] === "1") {
+            $keyword = array("query_string"=>
+                         array("default_field"=>"message",
+                               "default_operator"=>"or",
+                               "query"=> $escword2)
+                       );
+        }
+    
+        /* 正規表現の場合 */
+        if ($post["searchtype"] === "2") {
+            $keyword = array("regexp"=>
+                         array("message.keyword"=> $escword1)
+                       );
+        }
+        $jsonArray["query"]["bool"]["must"][] = $keyword;
+ 
+    }
+
+    /*****************************************************
+    * 期間
+    *****************************************************/
+    /* 入力された時間をelasticsearch用のログ形式に変更 */
+    $search_time = make_timerange_elastic($post);
+    $date = array();
+
+    /*   */
+    if ($search_time["start"] !== "") {
+        $date["range"]["date"]["from"] = $search_time["start"];
+    }
+
+
+    if ($search_time["end"] !== "") {
+        $date["range"]["date"]["to"] = $search_time["end"];
+    }
+
+
+    if (count($date) !== 0) {
+        $jsonArray["query"]["bool"]["must"][] = $date;
+    }
+
+    /*****************************************************
+    * 順序
+    *****************************************************/
+    $jsonArray["sort"]["date"]["order"] = "desc";
+
+
+    /*****************************************************
+    * jsonに変換
+    *****************************************************/
+    $json = json_encode($jsonArray);
+
+    return $json;
+
+}
+
+/*********************************************************
+ * make_elasticjson_dhcp()
+ *
+ * elasticsearchから検索するためのjson文(DHCP)を作成する
+ *
+ * [引数]
+ *       $groupdata          MYSQLから検索したロググループ結果
+ *       $post               入力された値
+ *
+ * [返り値]
+ *       $json                elasticsearch用json文(URL部分なし)
+ **********************************************************/
+function make_elasticjson_dhcp($groupdata, $post)
+{
+    /* 初期化 */
+    $json = "";
+    $jsonArray = array("query"=>
+                   array("bool"=>
+                     array("must"=>array())
+                   )
+                 );
+
+    /* 
+     *$groupdataはhost_nameで分割された配列になっている
+     * 逆に言えばhost_name以外はすべて同じ情報
+     * そのため、値の判別・取得用に先頭だけ切り出しておく
+     */
+    $ghead = $groupdata[0];
+
+    /*****************************************************
+    * Syslog ファシリティ
+    *****************************************************/
+    /* ファシリティが指定されていた場合のみ条件を作成 */
+    if ($ghead["facility_name"] !== ".ALL") {
+        $facility = array("match" => 
+                      array("facility" => $ghead["facility_name"])
+                    );
+
+        $jsonArray["query"]["bool"]["must"][] = $facility;
+    }
+
+    /*****************************************************
+    * Syslog タグ(アプリケーション名)
+    *****************************************************/
+    if ($ghead["app_name"] !== "") {
+        $app = array("wildcard" => 
+                 array("tag" => $ghead["app_name"]. "*")
+               );
+        $jsonArray["query"]["bool"]["must"][] = $app;
+    }
+
+    /*****************************************************
+    * ホスト名
+    *****************************************************/
+    $hosts = array();
+
+    /* $groupdataのホスト名を配列に整形 */
+    if ($ghead["host_name"] !== "" && $ghead["host_name"] !== NULL) {
+        foreach ($groupdata as $tmpgroup) {
+            /* host_idが1(すべてのホスト)は含めない*/
+            if ($tmpgroup["host_id"] == 1) {
+                continue;
+            }   
+
+            $hosts[] = $tmpgroup["host_name"];
+        }   
+    }   
+
+    if (count($hosts) !== 0) {
+        /* マージされたデータをユニークする */
+        $hosts = array_unique($hosts);
+
+        /* ホスト名達をスペース区切りの文字列とする */
+        $host_str = implode(" ", $hosts);
+
+        $hostJson = array("query_string"=>
+                         array("default_field"=>"host.keyword",
+                               "default_operator"=>"or",
+                               "query"=> $host_str)
+                       );
+        $jsonArray["query"]["bool"]["must"][] = $hostJson;
+    }
+
+
+    /*****************************************************
+    * IPアドレス
+    *****************************************************/
+    if ($post["ip"] !== "") {
+        /* :をエスケープ */
+        $escip = str_replace(":", "\:", $post["ip"]);
+
+        $ipjson = array("wildcard"=>
+                     array("message.keyword"=> "*". $escip. "*")
+                   );
+        $jsonArray["query"]["bool"]["must"][] = $ipjson;
+    }
+
+    /*****************************************************
+    * MACアドレス
+    *****************************************************/
+    if ($post["mac"] !== "") {
+        /* :をエスケープ */
+        $escmac = str_replace(":", "\:", $post["mac"]);
+
+        $macjson = array("wildcard"=>
+                     array("message.keyword"=> "*". $escmac. "*")
+                   );
+        $jsonArray["query"]["bool"]["must"][] = $macjson;
+    }
+
+    /*****************************************************
+    * NIC
+    *****************************************************/
+    if ($post["interface"] !== "") {
+        /* :をエスケープ */
+        $escif = str_replace(":", "\:", $post["interface"]);
+
+        $ifjson = array("wildcard"=>
+                     array("message.keyword"=> "*". $escif. "*")
+                   );
+        $jsonArray["query"]["bool"]["must"][] = $ifjson;
+    }
+
+    /*****************************************************
+    * 期間
+    *****************************************************/
+    /* 入力された時間をelasticsearch用のログ形式に変更 */
+    $search_time = make_timerange_elastic($post);
+    $date = array();
+
+    /*   */
+    if ($search_time["start"] !== "") {
+        $date["range"]["date"]["from"] = $search_time["start"];
+    }
+
+
+    if ($search_time["end"] !== "") {
+        $date["range"]["date"]["to"] = $search_time["end"];
+    }
+
+
+    if (count($date) !== 0) {
+        $jsonArray["query"]["bool"]["must"][] = $date;
+    }
+
+    /*****************************************************
+    * 順序
+    *****************************************************/
+    $jsonArray["sort"]["date"]["order"] = "desc";
+
+
+    /*****************************************************
+    * jsonに変換
+    *****************************************************/
+    $json = json_encode($jsonArray);
+
+    return $json;
+}
+
+/*********************************************************
+ * make_elasticjson_mail()
+ *
+ * elasticsearchから検索するためのjson文(MAIL)を作成する
+ *
+ * [引数]
+ *       $groupdata          MYSQLから検索したロググループ結果
+ *       $post               入力された値
+ *
+ * [返り値]
+ *       $json                elasticsearch用SQL文(URL部分なし)
+ **********************************************************/
+function make_elasticjson_mail($groupdata, $post)
+{
+    /* 初期化 */
+    $json = "";
+    $jsonArray = array("query"=>
+                   array("bool"=>
+                     array("must"=>array())
+                   )
+                 );
+
+    /* 
+     *$groupdataはhost_nameで分割された配列になっている
+     * 逆に言えばhost_name以外はすべて同じ情報
+     * そのため、値の判別・取得用に先頭だけ切り出しておく
+     */
+    $ghead = $groupdata[0];
+
+    /*****************************************************
+    * Syslog ファシリティ
+    *****************************************************/
+    /* ファシリティが指定されていた場合のみ条件を作成 */
+    if ($ghead["facility_name"] !== ".ALL") {
+        $facility = array("match" => 
+                      array("facility" => $ghead["facility_name"])
+                    );
+
+        $jsonArray["query"]["bool"]["must"][] = $facility;
+    }
+
+    /*****************************************************
+    * Syslog タグ(アプリケーション名)
+    *****************************************************/
+    if ($ghead["app_name"] !== "") {
+        $app = array("wildcard" => 
+                 array("tag.keyword" => $ghead["app_name"]. "*")
+               );
+        $jsonArray["query"]["bool"]["must"][] = $app;
+    }
+
+    /*****************************************************
+    * ホスト名
+    *****************************************************/
+    $hosts = array();
+
+    /* $groupdataのホスト名を配列に整形 */
+    if ($ghead["host_name"] !== "" && $ghead["host_name"] !== NULL) {
+        foreach ($groupdata as $tmpgroup) {
+            /* host_idが1(すべてのホスト)は含めない*/
+            if ($tmpgroup["host_id"] == 1) {
+                continue;
+            }
+
+            $hosts[] = $tmpgroup["host_name"];
+        }
+    } 
+
+    if (count($hosts) !== 0) {
+        /* マージされたデータをユニークする */
+        $hosts = array_unique($hosts);
+
+        /* ホスト名達をスペース区切りの文字列とする */
+        $host_str = implode(" ", $hosts);
+
+        $hostJson = array("query_string"=>
+                         array("default_field"=>"host.keyword",
+                               "default_operator"=>"or",
+                               "query"=> $host_str)
+                       );
+
+        $jsonArray["query"]["bool"]["must"][] = $hostJson;
+    }
+
+    /*****************************************************
+    * 期間
+    *****************************************************/
+    /* 入力された時間をelasticsearch用のログ形式に変更 */
+    $search_time = make_timerange_elastic($post);
+    $date = array();
+
+    /*   */
+    if ($search_time["start"] !== "") {
+        $date["range"]["date"]["from"] = $search_time["start"];
+    }
+
+
+    if ($search_time["end"] !== "") {
+        $date["range"]["date"]["to"] = $search_time["end"];
+    }
+
+
+    if (count($date) !== 0) {
+        $jsonArray["query"]["bool"]["must"][] = $date;
+    }
+
+    /*****************************************************
+    * 順序
+    *****************************************************/
+    $jsonArray["sort"]["date"]["order"] = "desc";
+
+
+    /*****************************************************
+    * jsonに変換
+    *****************************************************/
+    $json = json_encode($jsonArray);
+
+    return $json;
+}
+
+?>

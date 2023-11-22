@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title><<TITLE>></title>
+  <<JAVASCRIPT>>
+  <meta charset="EUC-JP">
+  <link rel="stylesheet" href="../../../../css/bootstrap/css/bootstrap-paper.css">
+  <script src="../../../../js/jquery-3.1.1.min.js"></script>
+  <script src="../../../../js/jquery-ui.min.js"></script>
+  <script src="../../../../css/bootstrap/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="../../../../css/style.css">
+  <link rel="stylesheet" href="../../../../admin/sylas.css">
+</head>
+
+<body>
+<header class="">
+  <nav class="navbar navbar-default navmargin">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#gmenu">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <div class="navbar-brand"></div>
+    </div>
+
+    <div id="gmenu" class="collapse navbar-collapse">
+      <ul class="nav navbar-nav navbar-right ">
+<<START_TAB>>
+<li class="<<ACTIVE>>"><a href="#" onClick="dgpSubmit('<<URL>>')"><span class="glyphicon glyphicon-user" aria-hidden="true"></span><<NAME>></a></li>
+<<END_TAB>>
+<li class=""><a href="#" onClick="dgpSubmit('../../../logout.php')"><span class="glyphicon glyphicon-user" aria-hidden="true"></span>ログアウト</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="container-fluid fix-padding">
+  </div>
+</header>
+
+<div class="container-fluid">
+  <!-- 左グリッド  -->
+  <div class="row">
+    <!-- 左ナビゲーションバー -->
+    <nav class="aside col-sm-2 col-sm-offset-1">
+      <div class="panel panel-default">
+        <ul class="list-group">
+<<START_MENU>>
+<a class="list-group-item  <<ACTIVE>>" href="#" onClick="dgpSubmit('<<URL>>')"><<NAME>></a>
+<<END_MENU>>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- 右グリッド  -->
+    <div class="col-sm-8">
+      <!-- エラーメッセージ -->
+
+      <!-- メインコンテンツ -->
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">検索対象ホスト追加・削除</h3>
+        </div>
+        <div class="ErrorMessage"></div>
+        <div class="row panel-body">
+          <!-- フォーム -->
+          <div class="col-sm-10 col-sm-offset-1">
+            <form class="form-horizontal" method="post" name="form_main" action="host.php">
+              <div class="form-group well">
+
+<<MESSAGE>>
+
+<div class="frame">
+<table>
+  <tr>
+    <td colspan="2">
+      選択可能ホスト<br>
+      <select name="all_host[]" size="10" class="host_wid" multiple>
+<<ALL_HOST_OPTION>>
+      </select>
+    </td> 
+  </tr>
+  <tr>
+    <td align="center">
+      <button type="submit" name="down" value="" class="btn btn-primary" >↓</button>
+    </td>
+    <td align="center">
+      <button type="submit" name="up" value="" class="btn btn-primary" >↑</button>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      検索対象ホスト<br>
+      <select name="search_host[]" size="10" class="host_wid" multiple>
+<<SEARCH_HOST_OPTION>>
+      </select>
+    </td>
+  </tr>
+</table>
+            <br>
+              <!-- ボタン -->
+              <div class="form-group">
+                <div class="col-sm-12">
+<<SK>>
+<button type="submit" name="mod" value="" class="btn btn-primary" "<<BUTTON_NAME>>">更新</button>
+<button type="button" name="cancel" value="" onClick="sysSubmit('<<CANCEL>>')" class="btn btn-primary" >キャンセル</button>
+<p>
+<br>
+<<SK>>
+<input type="hidden" name="group_id" value="<<GROUP_ID>>">
+<input type="hidden" name="fromADD" value="<<NEW_HOSTNAME>>">
+<!--
+<<NAME_HIDDEN>>
+-->
+<<NON_SEARCH_ID_HIDDEN>>
+<<SEARCH_ID_HIDDEN>>
+</div>
+
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<footer class="footer nav navbar-default">
+    <nav class="pull-right">
+      <div class="navbar-brand"></div>
+    </nav>
+</footer>
+
+<form method="post" name="common">
+  <<SK>>
+</form>
+
+</body>
+
+</html>

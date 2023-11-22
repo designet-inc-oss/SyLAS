@@ -1,0 +1,78 @@
+######## SyLAS #######
+# dglibsylas
+27001$DBのオープン失敗しました。(%s) $Cannot connect to MySQLserver. (%s)
+27002$DBの検索に失敗しました。 $Cannot search database.
+27003$クエリの実行に失敗しました。(%s) $Failed to run Query.(%s)
+# SyLAS
+28001$%sが入力されていません。 $No %s is inputed.
+28002$%sが不正です。 $Invalid %s.
+28003$ログ名は既に登録されています。(%s) $The log name already exists.(%s)
+28004$検索ログの更新に成功しました。(%s) $Success updating the logsearchlist. (%s)
+28005$ホストの追加に成功しました。(%s) $Success adding the host. (%s)
+28006$ロググループに設定されているためホストを削除できません。$Cannot detele host because it is set to loggroup.
+28007$ホストの削除に成功しました。 $Success deleting the host.
+28008$ロググループの更新に成功しました。(%s) $Success updating the log group. (%s)
+28009$ロググループの削除に成功しました。 $Success deleting the log group.
+28010$検索ログの削除に成功しました。 $Success deleting the logsearchlist.
+28011$ホスト名が選択されていません。 $
+28012$検索対象ホストに登録されているため削除できません。$
+28013$ロググループに登録されているため削除できません。$
+28014$ロググループが選択されていません。$No loggroup is selected.
+28015$キーワードが不正です。 $Invalid keyword.
+28016$開始日付が不正です。 $Invalid Start time.
+28017$終了日付が不正です。 $Invalid End time.
+28018$日付範囲指定が不正です。 $The Search time span is invalid.
+28019$検索対象ホストが設定されていません。 $No Search host is setted.
+28020$検索対象ホストを更新しました。 $Success modifying search hosts.
+28021$ホストは既に登録されています。(%s) $The host already exists.(%s)
+28022$%s件のログが該当しました。 $
+28023$ロググループは既に削除されています。(%s) $The log group is already deleted.(%s)
+28024$検索ログは既に削除されています。(%s) $The logsearchlist is already deleted.(%s)
+28025$"*", "+", "?"は直前の文字の繰り返しを意味する記号であるためキーワードの先頭に指定できません。 $"*", "+", "?" are cannot used for start of keyword because it are The sign meaning a repetition of the last character.
+28026$キーワードの正規表現の指定が不正です。 $
+# SyLAS/logsetthing/loggrouplist/add.php
+28027$新規ロググループ(%s) に登録する検索対象ホストを選択してください。 $
+28028$新規ロググループ(%s) を登録しました。 $Success adding the log group.(%s)
+# SyLAS/easylogsearch/index.php
+28029$ホスト名が不正です。 $Invalid Hostname.
+# SyLAS/rule/rule_add/index.php
+28030$%sの入力値が許可されていない形式です。 $Invalid %s.
+28031$既にファイルが存在します。%s $%s existed.
+28032$ロックファイルの作成に失敗しました。 $Failed to make lock file.
+28033$設定ファイル%sのオープンに失敗しました。 $Failed to open %s.
+28034$設定ファイル%sに書き込めませんでした。 $Failed to write %s.
+28035$rsyslogプロセス再起動に失敗しました。 $Failed to restart.
+28036$ロックファイルの削除に失敗しました。 $Failed to delete lock file.
+28037$ルールの追加に成功しました。%s  $Success adding the rule.(%s)
+28038$ディレクトリの読み込み権がありません。%s $No read permission on this directory.(%s)
+# SyLAS/rule/index.php
+28039$ルールが存在しません。 $Rule does not exist.
+28040$ルールの削除に失敗しました。%s $Failed to delet the rule.(%s)
+28041$ルールを削除しました。%s $Success deleting the rule.(%s)
+28042$設定ファイル%sが読めませんでした。 $Failed to read %s.
+28043$ファイル%sが存在しません。 $%s does not exist.
+# SyLAS/rule/rule_mod/index.php
+28044$ルールの編集に成功しました。%s  $Success updating the rule.(%s)
+28045$IPアドレス/IPv6アドレスの指定が不正です。 $Invalid form of IP address/IPv6 address.
+28046$MACアドレス/クライアントIDの指定が不正です。 $Invalid form of MAC address/Client ID.
+28047$インタフェースの指定が不正です。 $Invalid form of interface.
+28048$表示件数を超えるログが該当しました。[%s] $
+28049$検索ログの登録に成功しました。(%s) $Success add the logsearchlist. (%s)
+# SyLAS/easylogsearch/index.php
+41000$検索結果は%s件該当しました。 $
+41001$解析ログ対象件数が最大値を超えました。%s件を解析対象とします。<br>検索結果は%s件該当しました。$ 
+41002$ファイルに読み込み権がありません(%s) $Cannot read file(%s)
+41003$ファイルが存在しません(%s) $No such file.(%s)
+41004$指定されたファイルはディレクトリです。(%s) $Designated file is a directory(%s)
+41005$送信者メールアドレスの指定が不正です。 $Invalid form of from address.
+41006$宛先メールアドレスの指定が不正です。 $Invalid form of rcpt address.
+41008$開始日付が不正です。 $Invalid form of start date.
+41009$終了日日付が不正です。 $Invalid form of end date.
+41010$DBのオープンに失敗しました。([DBServer:DBServerport]) $Cannot open database([DBServer:DBServerport])
+41011$不正な操作です。 $resultline not specified. Cross site scripting ?
+41012$検索結果表示件数は数値を指定してください。 $A value other than a numerical value was specified as the number of search results to be displayed.
+41013$検索結果表示件数には1以上の値を指定してください。 $Resultline range abnormality
+# SyLAS elasticsearch
+50000$ElasticsearchServerの接続に失敗しました。$Cannot connect to Elasticsearch server.
+50001$ElasticsearchServerの検索に失敗しました。$Failed to find the Elasticsearch server.
+50002$検索期間が%s日以内になるように指定してください。$The search period exceeded the maximum value.

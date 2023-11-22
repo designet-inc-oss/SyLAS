@@ -1,0 +1,32 @@
+<?php
+
+$conf_keys["sylas"] = array("dbserver"             => "no_check",
+                            "dbserverport"         => "no_check",
+                            "dbuser"               => "no_check",
+                            "dbpassword"           => "no_check",
+                            "dataname"             => "no_check",
+                            "defaultsearchtable"   => "no_check",
+                            "logtype"              => "no_check",
+                            "displaylines"         => "no_check",
+                            "rsyslogconfdir"       => "no_check",
+                            "rsyslogrestartcmd"    => "no_check",
+                            "maxsearchcount"       => "no_check",
+                            "searchtype"           => "check_searchtype",
+                            "elasticsearchservers" => "check_elasticsearchserver",
+                            "searchperiodwithindex" => "is_positive_number",
+                            "allowallindexsearch"  => "check_boolean",
+                            "csvformat"            => "check_csvformat",
+                           );
+
+$conf_def["sylas"] = array("dbserverport"         => "3306",
+                           "displaylines"         => "200",
+                           "rsyslogconfdir"       => "/etc/rsyslog.sylas.d/",
+                           "rsyslogrestartcmd"    => "sudo /etc/init.d/rsyslog restart",
+                           "maxsearchcount"       => "1000",
+                           "searchperiodwithindex" => "7",
+                           "allowallindexsearch"   => "1",
+                           "searchtype"           => "mysql",
+                           "elasticsearchservers" => "127.0.0.1:9200",
+                            "csvformat"            => "date,host,msg",
+                          );
+?>
