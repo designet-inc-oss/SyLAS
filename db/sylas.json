@@ -1,5 +1,5 @@
 {
-  "template": "syslog-*",
+  "index_patterns": ["sylas-*"],
   "settings": {
     "analysis": {
       "analyzer":{
@@ -18,53 +18,51 @@
         }
       }
     }
-  }, 
+  },
   "mappings" : {
-    "events" : {
-      "properties" : {
-        "date" : {
-          "type" : "date"
-        },
-        "facility" : {
-          "type" : "text",
-          "fields" : {
-            "keyword" : {
-              "type" : "keyword"
-            }
+    "properties" : {
+      "date" : {
+        "type" : "date"
+      },
+      "facility" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword"
           }
-        },
-        "host" : {
-          "type" : "text",
-          "fields" : {
-            "keyword" : {
-              "type" : "keyword"
-            }
+        }
+      },
+      "host" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword"
           }
-        },
-        "message" : {
-          "type" : "text",
-          "analyzer": "log_analyzer",
-          "fields" : {
-            "keyword" : {
-              "type" : "keyword",
-              "normalizer": "nlower"
-            }
+        }
+      },
+      "message" : {
+        "type" : "text",
+        "analyzer": "log_analyzer",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "normalizer": "nlower"
           }
-        },
-        "priority" : {
-          "type" : "text",
-          "fields" : {
-            "keyword" : {
-              "type" : "keyword"
-            }
+        }
+      },
+      "priority" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword"
           }
-        },
-        "tag" : {
-          "type" : "text",
-          "fields" : {
-            "keyword" : {
-              "type" : "keyword"
-            }
+        }
+      },
+      "tag" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword"
           }
         }
       }
