@@ -3199,7 +3199,7 @@ function make_elasticjson($groupdata, $post)
         $host_str = implode(" ", $hosts);
 
         $hostJson = array("query_string"=>
-                         array("default_field"=>"host.keyword",
+                         array("default_field"=>"host",
                                "default_operator"=>"or",
                                "query"=> $host_str)
                        );
@@ -3355,7 +3355,7 @@ function make_elasticjson_dhcp($groupdata, $post)
         $host_str = implode(" ", $hosts);
 
         $hostJson = array("query_string"=>
-                         array("default_field"=>"host.keyword",
+                         array("default_field"=>"host",
                                "default_operator"=>"or",
                                "query"=> $host_str)
                        );
@@ -3514,7 +3514,7 @@ function make_elasticjson_mail($groupdata, $post)
         $host_str = implode(" ", $hosts);
 
         $hostJson = array("query_string"=>
-                         array("default_field"=>"host.keyword",
+                         array("default_field"=>"host",
                                "default_operator"=>"or",
                                "query"=> $host_str)
                        );
